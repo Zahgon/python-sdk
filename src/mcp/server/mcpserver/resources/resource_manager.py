@@ -80,29 +80,12 @@ class ResourceManager:
 
     async def get_resource(self, uri: AnyUrl | str, context: Context[LifespanContextT, RequestT]) -> Resource:
         """Get resource by URI, checking concrete resources first, then templates."""
-        uri_str = str(uri)
-        logger.debug("Getting resource", extra={"uri": uri_str})
-
-        # First check concrete resources
-        if resource := self._resources.get(uri_str):
-            return resource
-
-        # Then check templates
-        for template in self._templates.values():
-            if params := template.matches(uri_str):
-                try:
-                    return await template.create_resource(uri_str, params, context=context)
-                except Exception as e:  # pragma: no cover
-                    raise ValueError(f"Error creating resource from template: {e}")
-
-        raise ValueError(f"Unknown resource: {uri}")
+        pass
 
     def list_resources(self) -> list[Resource]:
         """List all registered resources."""
-        logger.debug("Listing resources", extra={"count": len(self._resources)})
-        return list(self._resources.values())
+        pass
 
     def list_templates(self) -> list[ResourceTemplate]:
         """List all registered templates."""
-        logger.debug("Listing templates", extra={"count": len(self._templates)})
-        return list(self._templates.values())
+        pass

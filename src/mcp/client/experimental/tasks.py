@@ -92,17 +92,7 @@ class ExperimentalClientFeatures:
             final = await session.experimental.get_task_result(task_id, CallToolResult)
             ```
         """
-        return await self._session.send_request(
-            types.CallToolRequest(
-                params=types.CallToolRequestParams(
-                    name=name,
-                    arguments=arguments,
-                    task=types.TaskMetadata(ttl=ttl),
-                    _meta=meta,
-                ),
-            ),
-            types.CreateTaskResult,
-        )
+        pass
 
     async def get_task(self, task_id: str) -> types.GetTaskResult:
         """Get the current status of a task.
@@ -113,10 +103,7 @@ class ExperimentalClientFeatures:
         Returns:
             GetTaskResult containing the task status and metadata
         """
-        return await self._session.send_request(
-            types.GetTaskRequest(params=types.GetTaskRequestParams(task_id=task_id)),
-            types.GetTaskResult,
-        )
+        pass
 
     async def get_task_result(
         self,
@@ -136,12 +123,7 @@ class ExperimentalClientFeatures:
         Returns:
             The task result, validated against result_type
         """
-        return await self._session.send_request(
-            types.GetTaskPayloadRequest(
-                params=types.GetTaskPayloadRequestParams(task_id=task_id),
-            ),
-            result_type,
-        )
+        pass
 
     async def list_tasks(
         self,
@@ -155,11 +137,7 @@ class ExperimentalClientFeatures:
         Returns:
             ListTasksResult containing tasks and optional next cursor
         """
-        params = types.PaginatedRequestParams(cursor=cursor) if cursor else None
-        return await self._session.send_request(
-            types.ListTasksRequest(params=params),
-            types.ListTasksResult,
-        )
+        pass
 
     async def cancel_task(self, task_id: str) -> types.CancelTaskResult:
         """Cancel a running task.
@@ -170,12 +148,7 @@ class ExperimentalClientFeatures:
         Returns:
             CancelTaskResult with the updated task state
         """
-        return await self._session.send_request(
-            types.CancelTaskRequest(
-                params=types.CancelTaskRequestParams(task_id=task_id),
-            ),
-            types.CancelTaskResult,
-        )
+        pass
 
     async def poll_task(self, task_id: str) -> AsyncIterator[types.GetTaskResult]:
         """Poll a task until it reaches a terminal status.
@@ -204,5 +177,4 @@ class ExperimentalClientFeatures:
             result = await session.experimental.get_task_result(task_id, CallToolResult)
             ```
         """
-        async for status in poll_until_terminal(self.get_task, task_id):
-            yield status
+        pass

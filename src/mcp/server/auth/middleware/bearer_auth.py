@@ -26,25 +26,7 @@ class BearerAuthBackend(AuthenticationBackend):
         self.token_verifier = token_verifier
 
     async def authenticate(self, conn: HTTPConnection):
-        auth_header = next(
-            (conn.headers.get(key) for key in conn.headers if key.lower() == "authorization"),
-            None,
-        )
-        if not auth_header or not auth_header.lower().startswith("bearer "):
-            return None
-
-        token = auth_header[7:]  # Remove "Bearer " prefix
-
-        # Validate the token with the verifier
-        auth_info = await self.token_verifier.verify_token(token)
-
-        if not auth_info:
-            return None
-
-        if auth_info.expires_at and auth_info.expires_at < int(time.time()):
-            return None
-
-        return AuthCredentials(auth_info.scopes), AuthenticatedUser(auth_info)
+        pass
 
 
 class RequireAuthMiddleware:
@@ -93,32 +75,4 @@ class RequireAuthMiddleware:
 
     async def _send_auth_error(self, send: Send, status_code: int, error: str, description: str) -> None:
         """Send an authentication error response with WWW-Authenticate header."""
-        # Build WWW-Authenticate header value
-        www_auth_parts = [f'error="{error}"', f'error_description="{description}"']
-        if self.resource_metadata_url:  # pragma: no cover
-            www_auth_parts.append(f'resource_metadata="{self.resource_metadata_url}"')
-
-        www_authenticate = f"Bearer {', '.join(www_auth_parts)}"
-
-        # Send response
-        body = {"error": error, "error_description": description}
-        body_bytes = json.dumps(body).encode()
-
-        await send(
-            {
-                "type": "http.response.start",
-                "status": status_code,
-                "headers": [
-                    (b"content-type", b"application/json"),
-                    (b"content-length", str(len(body_bytes)).encode()),
-                    (b"www-authenticate", www_authenticate.encode()),
-                ],
-            }
-        )
-
-        await send(
-            {
-                "type": "http.response.body",
-                "body": body_bytes,
-            }
-        )
+        pass

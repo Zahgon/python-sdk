@@ -33,4 +33,4 @@ def inject_trace_context(meta: dict[str, Any]) -> None:
 
 def extract_trace_context(meta: dict[str, Any]) -> Context:
     """Extract W3C trace context from a `_meta` dict."""
-    return extract(meta)
+    pass

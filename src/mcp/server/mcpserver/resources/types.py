@@ -128,18 +128,13 @@ class FileResource(Resource):
     @classmethod
     def validate_absolute_path(cls, path: Path) -> Path:
         """Ensure path is absolute."""
-        if not path.is_absolute():
-            raise ValueError("Path must be absolute")
-        return path
+        pass
 
     @pydantic.field_validator("is_binary")
     @classmethod
     def set_binary_from_mime_type(cls, is_binary: bool, info: ValidationInfo) -> bool:
         """Set is_binary based on mime_type if not explicitly set."""
-        if is_binary:
-            return True
-        mime_type = info.data.get("mime_type", "text/plain")
-        return not mime_type.startswith("text/")
+        pass
 
     async def read(self) -> str | bytes:
         """Read the file content."""
@@ -177,23 +172,11 @@ class DirectoryResource(Resource):
     @classmethod
     def validate_absolute_path(cls, path: Path) -> Path:  # pragma: no cover
         """Ensure path is absolute."""
-        if not path.is_absolute():
-            raise ValueError("Path must be absolute")
-        return path
+        pass
 
     def list_files(self) -> list[Path]:  # pragma: no cover
         """List files in the directory."""
-        if not self.path.exists():
-            raise FileNotFoundError(f"Directory not found: {self.path}")
-        if not self.path.is_dir():
-            raise NotADirectoryError(f"Not a directory: {self.path}")
-
-        try:
-            if self.pattern:
-                return list(self.path.glob(self.pattern)) if not self.recursive else list(self.path.rglob(self.pattern))
-            return list(self.path.glob("*")) if not self.recursive else list(self.path.rglob("*"))
-        except Exception as e:
-            raise ValueError(f"Error listing directory {self.path}: {e}")
+        pass
 
     async def read(self) -> str:  # Always returns JSON string  # pragma: no cover
         """Read the directory listing."""

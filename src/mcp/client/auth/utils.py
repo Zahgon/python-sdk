@@ -22,19 +22,7 @@ def extract_field_from_www_auth(response: Response, field_name: str) -> str | No
     Returns:
         Field value if found in WWW-Authenticate header, None otherwise
     """
-    www_auth_header = response.headers.get("WWW-Authenticate")
-    if not www_auth_header:
-        return None
-
-    # Pattern matches: field_name="value" or field_name=value (unquoted)
-    pattern = rf'{field_name}=(?:"([^"]+)"|([^\s,]+))'
-    match = re.search(pattern, www_auth_header)
-
-    if match:
-        # Return quoted value if present, otherwise unquoted value
-        return match.group(1) or match.group(2)
-
-    return None
+    pass
 
 
 def extract_scope_from_www_auth(response: Response) -> str | None:
@@ -43,7 +31,7 @@ def extract_scope_from_www_auth(response: Response) -> str | None:
     Returns:
         Scope string if found in WWW-Authenticate header, None otherwise
     """
-    return extract_field_from_www_auth(response, "scope")
+    pass
 
 
 def extract_resource_metadata_from_www_auth(response: Response) -> str | None:
@@ -52,10 +40,7 @@ def extract_resource_metadata_from_www_auth(response: Response) -> str | None:
     Returns:
         Resource metadata URL if found in WWW-Authenticate header, None otherwise
     """
-    if not response or response.status_code != 401:
-        return None  # pragma: no cover
-
-    return extract_field_from_www_auth(response, "resource_metadata")
+    pass
 
 
 def build_protected_resource_metadata_discovery_urls(www_auth_url: str | None, server_url: str) -> list[str]:
@@ -73,26 +58,7 @@ def build_protected_resource_metadata_discovery_urls(www_auth_url: str | None, s
     Returns:
         Ordered list of URLs to try for discovery
     """
-    urls: list[str] = []
-
-    # Priority 1: WWW-Authenticate header with resource_metadata parameter
-    if www_auth_url:
-        urls.append(www_auth_url)
-
-    # Priority 2-3: Well-known URIs (RFC 9728)
-    parsed = urlparse(server_url)
-    base_url = f"{parsed.scheme}://{parsed.netloc}"
-
-    # Priority 2: Path-based well-known URI (if server has a path component)
-    if parsed.path and parsed.path != "/":
-        path_based_url = urljoin(base_url, f"/.well-known/oauth-protected-resource{parsed.path}")
-        urls.append(path_based_url)
-
-    # Priority 3: Root-based well-known URI
-    root_based_url = urljoin(base_url, "/.well-known/oauth-protected-resource")
-    urls.append(root_based_url)
-
-    return urls
+    pass
 
 
 def get_client_metadata_scopes(
@@ -102,33 +68,7 @@ def get_client_metadata_scopes(
     client_grant_types: list[str] | None = None,
 ) -> str | None:
     """Select effective scopes and augment for refresh token support."""
-    selected_scope: str | None = None
-
-    # MCP spec scope selection priority:
-    #   1. WWW-Authenticate header scope
-    #   2. PRM scopes_supported
-    #   3. AS scopes_supported (SDK fallback)
-    #   4. Omit scope parameter
-    if www_authenticate_scope is not None:
-        selected_scope = www_authenticate_scope
-    elif protected_resource_metadata is not None and protected_resource_metadata.scopes_supported is not None:
-        selected_scope = " ".join(protected_resource_metadata.scopes_supported)
-    elif authorization_server_metadata is not None and authorization_server_metadata.scopes_supported is not None:
-        selected_scope = " ".join(authorization_server_metadata.scopes_supported)
-
-    # SEP-2207: append offline_access when the AS supports it and the client can use refresh tokens
-    if (
-        selected_scope is not None
-        and authorization_server_metadata is not None
-        and authorization_server_metadata.scopes_supported is not None
-        and "offline_access" in authorization_server_metadata.scopes_supported
-        and client_grant_types is not None
-        and "refresh_token" in client_grant_types
-        and "offline_access" not in selected_scope.split()
-    ):
-        selected_scope = f"{selected_scope} offline_access"
-
-    return selected_scope
+    pass
 
 
 def build_oauth_authorization_server_metadata_discovery_urls(auth_server_url: str | None, server_url: str) -> list[str]:
@@ -138,40 +78,7 @@ def build_oauth_authorization_server_metadata_discovery_urls(auth_server_url: st
         auth_server_url: OAuth Authorization Server Metadata URL if found, otherwise None
         server_url: URL for the MCP server, used as a fallback if auth_server_url is None
     """
-
-    if not auth_server_url:
-        # Legacy path using the 2025-03-26 spec:
-        # link: https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization
-        parsed = urlparse(server_url)
-        return [f"{parsed.scheme}://{parsed.netloc}/.well-known/oauth-authorization-server"]
-
-    urls: list[str] = []
-    parsed = urlparse(auth_server_url)
-    base_url = f"{parsed.scheme}://{parsed.netloc}"
-
-    # RFC 8414: Path-aware OAuth discovery
-    if parsed.path and parsed.path != "/":
-        oauth_path = f"/.well-known/oauth-authorization-server{parsed.path.rstrip('/')}"
-        urls.append(urljoin(base_url, oauth_path))
-
-        # RFC 8414 section 5: Path-aware OIDC discovery
-        # See https://www.rfc-editor.org/rfc/rfc8414.html#section-5
-        oidc_path = f"/.well-known/openid-configuration{parsed.path.rstrip('/')}"
-        urls.append(urljoin(base_url, oidc_path))
-
-        # https://openid.net/specs/openid-connect-discovery-1_0.html
-        oidc_path = f"{parsed.path.rstrip('/')}/.well-known/openid-configuration"
-        urls.append(urljoin(base_url, oidc_path))
-        return urls
-
-    # OAuth root
-    urls.append(urljoin(base_url, "/.well-known/oauth-authorization-server"))
-
-    # OIDC 1.0 fallback (appends to full URL per OIDC spec)
-    # https://openid.net/specs/openid-connect-discovery-1_0.html
-    urls.append(urljoin(base_url, "/.well-known/openid-configuration"))
-
-    return urls
+    pass
 
 
 async def handle_protected_resource_response(
@@ -184,66 +91,27 @@ async def handle_protected_resource_response(
     Returns:
         ProtectedResourceMetadata if successfully discovered, None if we should try next URL
     """
-    if response.status_code == 200:
-        try:
-            content = await response.aread()
-            metadata = ProtectedResourceMetadata.model_validate_json(content)
-            return metadata
-
-        except ValidationError:  # pragma: no cover
-            # Invalid metadata - try next URL
-            return None
-    else:
-        # Not found - try next URL in fallback chain
-        return None
+    pass
 
 
 async def handle_auth_metadata_response(response: Response) -> tuple[bool, OAuthMetadata | None]:
-    if response.status_code == 200:
-        try:
-            content = await response.aread()
-            asm = OAuthMetadata.model_validate_json(content)
-            return True, asm
-        except ValidationError:  # pragma: no cover
-            return True, None
-    elif response.status_code < 400 or response.status_code >= 500:
-        return False, None  # Non-4XX error, stop trying
-    return True, None
+    pass
 
 
 def create_oauth_metadata_request(url: str) -> Request:
-    return Request("GET", url, headers={MCP_PROTOCOL_VERSION: LATEST_PROTOCOL_VERSION})
+    pass
 
 
 def create_client_registration_request(
     auth_server_metadata: OAuthMetadata | None, client_metadata: OAuthClientMetadata, auth_base_url: str
 ) -> Request:
     """Build a client registration request."""
-
-    if auth_server_metadata and auth_server_metadata.registration_endpoint:
-        registration_url = str(auth_server_metadata.registration_endpoint)
-    else:
-        registration_url = urljoin(auth_base_url, "/register")
-
-    registration_data = client_metadata.model_dump(by_alias=True, mode="json", exclude_none=True)
-
-    return Request("POST", registration_url, json=registration_data, headers={"Content-Type": "application/json"})
+    pass
 
 
 async def handle_registration_response(response: Response) -> OAuthClientInformationFull:
     """Handle registration response."""
-    if response.status_code not in (200, 201):
-        await response.aread()
-        raise OAuthRegistrationError(f"Registration failed: {response.status_code} {response.text}")
-
-    try:
-        content = await response.aread()
-        client_info = OAuthClientInformationFull.model_validate_json(content)
-        return client_info
-        # self.context.client_info = client_info
-        # await self.context.storage.set_client_info(client_info)
-    except ValidationError as e:  # pragma: no cover
-        raise OAuthRegistrationError(f"Invalid registration response: {e}")
+    pass
 
 
 def is_valid_client_metadata_url(url: str | None) -> bool:
@@ -257,13 +125,7 @@ def is_valid_client_metadata_url(url: str | None) -> bool:
     Returns:
         True if the URL is a valid HTTPS URL with a non-root pathname
     """
-    if not url:
-        return False
-    try:
-        parsed = urlparse(url)
-        return parsed.scheme == "https" and parsed.path not in ("", "/")
-    except Exception:
-        return False
+    pass
 
 
 def should_use_client_metadata_url(
@@ -283,13 +145,7 @@ def should_use_client_metadata_url(
     Returns:
         True if CIMD should be used, False if DCR should be used
     """
-    if not client_metadata_url:
-        return False
-
-    if not oauth_metadata:
-        return False
-
-    return oauth_metadata.client_id_metadata_document_supported is True
+    pass
 
 
 def create_client_info_from_metadata_url(
@@ -308,11 +164,7 @@ def create_client_info_from_metadata_url(
     Returns:
         OAuthClientInformationFull with the URL as client_id
     """
-    return OAuthClientInformationFull(
-        client_id=client_metadata_url,
-        token_endpoint_auth_method="none",
-        redirect_uris=redirect_uris,
-    )
+    pass
 
 
 async def handle_token_response_scopes(
@@ -331,9 +183,4 @@ async def handle_token_response_scopes(
     Raises:
         OAuthTokenError: If response JSON is invalid
     """
-    try:
-        content = await response.aread()
-        token_response = OAuthToken.model_validate_json(content)
-        return token_response
-    except ValidationError as e:  # pragma: no cover
-        raise OAuthTokenError(f"Invalid token response: {e}")
+    pass

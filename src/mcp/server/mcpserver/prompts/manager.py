@@ -23,11 +23,11 @@ class PromptManager:
 
     def get_prompt(self, name: str) -> Prompt | None:
         """Get prompt by name."""
-        return self._prompts.get(name)
+        pass
 
     def list_prompts(self) -> list[Prompt]:
         """List all registered prompts."""
-        return list(self._prompts.values())
+        pass
 
     def add_prompt(
         self,
@@ -52,8 +52,4 @@ class PromptManager:
         context: Context[LifespanContextT, RequestT],
     ) -> list[Message]:
         """Render a prompt by name with arguments."""
-        prompt = self.get_prompt(name)
-        if not prompt:
-            raise ValueError(f"Unknown prompt: {name}")
-
-        return await prompt.render(arguments, context)
+        pass

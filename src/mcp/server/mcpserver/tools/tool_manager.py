@@ -29,11 +29,11 @@ class ToolManager:
 
     def get_tool(self, name: str) -> Tool | None:
         """Get tool by name."""
-        return self._tools.get(name)
+        pass
 
     def list_tools(self) -> list[Tool]:
         """List all registered tools."""
-        return list(self._tools.values())
+        pass
 
     def add_tool(
         self,
@@ -67,9 +67,7 @@ class ToolManager:
 
     def remove_tool(self, name: str) -> None:
         """Remove a tool by name."""
-        if name not in self._tools:
-            raise ToolError(f"Unknown tool: {name}")
-        del self._tools[name]
+        pass
 
     async def call_tool(
         self,
@@ -79,8 +77,4 @@ class ToolManager:
         convert_result: bool = False,
     ) -> Any:
         """Call a tool by name with arguments."""
-        tool = self.get_tool(name)
-        if not tool:
-            raise ToolError(f"Unknown tool: {name}")
-
-        return await tool.run(arguments, context, convert_result=convert_result)
+        pass

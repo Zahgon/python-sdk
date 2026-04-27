@@ -38,7 +38,7 @@ class Tool(BaseModel):
 
     @cached_property
     def output_schema(self) -> dict[str, Any] | None:
-        return self.fn_metadata.output_schema
+        pass
 
     @classmethod
     def from_function(

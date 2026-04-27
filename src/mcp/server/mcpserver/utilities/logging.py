@@ -24,16 +24,4 @@ def configure_logging(
     Args:
         level: The log level to use.
     """
-    handlers: list[logging.Handler] = []
-    try:
-        from rich.console import Console
-        from rich.logging import RichHandler
-
-        handlers.append(RichHandler(console=Console(stderr=True), rich_tracebacks=True))
-    except ImportError:  # pragma: no cover
-        pass
-
-    if not handlers:  # pragma: no cover
-        handlers.append(logging.StreamHandler())
-
-    logging.basicConfig(level=level, format="%(message)s", handlers=handlers)
+    pass

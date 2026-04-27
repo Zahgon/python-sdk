@@ -150,9 +150,7 @@ class Client:
         Raises:
             RuntimeError: If accessed before entering the context manager.
         """
-        if self._session is None:
-            raise RuntimeError("Client must be used within an async context manager")
-        return self._session
+        pass
 
     @property
     def initialize_result(self) -> InitializeResult:
@@ -161,14 +159,11 @@ class Client:
         Contains server_info, capabilities, instructions, and the negotiated protocol_version.
         Raises RuntimeError if accessed outside the context manager.
         """
-        result = self.session.initialize_result
-        if result is None:  # pragma: no cover
-            raise RuntimeError("Client must be used within an async context manager")
-        return result
+        pass
 
     async def send_ping(self, *, meta: RequestParamsMeta | None = None) -> EmptyResult:
         """Send a ping request to the server."""
-        return await self.session.send_ping(meta=meta)
+        pass
 
     async def send_progress_notification(
         self,
@@ -178,16 +173,11 @@ class Client:
         message: str | None = None,
     ) -> None:
         """Send a progress notification to the server."""
-        await self.session.send_progress_notification(
-            progress_token=progress_token,
-            progress=progress,
-            total=total,
-            message=message,
-        )
+        pass
 
     async def set_logging_level(self, level: LoggingLevel, *, meta: RequestParamsMeta | None = None) -> EmptyResult:
         """Set the logging level on the server."""
-        return await self.session.set_logging_level(level=level, meta=meta)
+        pass
 
     async def list_resources(
         self,
@@ -196,7 +186,7 @@ class Client:
         meta: RequestParamsMeta | None = None,
     ) -> ListResourcesResult:
         """List available resources from the server."""
-        return await self.session.list_resources(params=PaginatedRequestParams(cursor=cursor, _meta=meta))
+        pass
 
     async def list_resource_templates(
         self,
@@ -205,7 +195,7 @@ class Client:
         meta: RequestParamsMeta | None = None,
     ) -> ListResourceTemplatesResult:
         """List available resource templates from the server."""
-        return await self.session.list_resource_templates(params=PaginatedRequestParams(cursor=cursor, _meta=meta))
+        pass
 
     async def read_resource(self, uri: str, *, meta: RequestParamsMeta | None = None) -> ReadResourceResult:
         """Read a resource from the server.
@@ -217,15 +207,15 @@ class Client:
         Returns:
             The resource content.
         """
-        return await self.session.read_resource(uri, meta=meta)
+        pass
 
     async def subscribe_resource(self, uri: str, *, meta: RequestParamsMeta | None = None) -> EmptyResult:
         """Subscribe to resource updates."""
-        return await self.session.subscribe_resource(uri, meta=meta)
+        pass
 
     async def unsubscribe_resource(self, uri: str, *, meta: RequestParamsMeta | None = None) -> EmptyResult:
         """Unsubscribe from resource updates."""
-        return await self.session.unsubscribe_resource(uri, meta=meta)
+        pass
 
     async def call_tool(
         self,
@@ -248,13 +238,7 @@ class Client:
         Returns:
             The tool result.
         """
-        return await self.session.call_tool(
-            name=name,
-            arguments=arguments,
-            read_timeout_seconds=read_timeout_seconds,
-            progress_callback=progress_callback,
-            meta=meta,
-        )
+        pass
 
     async def list_prompts(
         self,
@@ -263,7 +247,7 @@ class Client:
         meta: RequestParamsMeta | None = None,
     ) -> ListPromptsResult:
         """List available prompts from the server."""
-        return await self.session.list_prompts(params=PaginatedRequestParams(cursor=cursor, _meta=meta))
+        pass
 
     async def get_prompt(
         self, name: str, arguments: dict[str, str] | None = None, *, meta: RequestParamsMeta | None = None
@@ -278,7 +262,7 @@ class Client:
         Returns:
             The prompt content.
         """
-        return await self.session.get_prompt(name=name, arguments=arguments, meta=meta)
+        pass
 
     async def complete(
         self,
@@ -296,13 +280,12 @@ class Client:
         Returns:
             Completion suggestions.
         """
-        return await self.session.complete(ref=ref, argument=argument, context_arguments=context_arguments)
+        pass
 
     async def list_tools(self, *, cursor: str | None = None, meta: RequestParamsMeta | None = None) -> ListToolsResult:
         """List available tools from the server."""
-        return await self.session.list_tools(params=PaginatedRequestParams(cursor=cursor, _meta=meta))
+        pass
 
     async def send_roots_list_changed(self) -> None:
         """Send a notification that the roots list has changed."""
-        # TODO(Marcelo): Currently, there is no way for the server to handle this. We should add support.
-        await self.session.send_roots_list_changed()  # pragma: no cover
+        pass

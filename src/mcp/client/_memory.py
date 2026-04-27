@@ -37,32 +37,7 @@ class InMemoryTransport:
     @asynccontextmanager
     async def _connect(self) -> AsyncIterator[TransportStreams]:
         """Connect to the server and yield streams for communication."""
-        # Unwrap MCPServer to get underlying Server
-        if isinstance(self._server, MCPServer):
-            # TODO(Marcelo): Make `lowlevel_server` public.
-            actual_server: Server[Any] = self._server._lowlevel_server  # type: ignore[reportPrivateUsage]
-        else:
-            actual_server = self._server
-
-        async with create_client_server_memory_streams() as (client_streams, server_streams):
-            client_read, client_write = client_streams
-            server_read, server_write = server_streams
-
-            async with anyio.create_task_group() as tg:
-                # Start server in background
-                tg.start_soon(
-                    lambda: actual_server.run(
-                        server_read,
-                        server_write,
-                        actual_server.create_initialization_options(),
-                        raise_exceptions=self._raise_exceptions,
-                    )
-                )
-
-                try:
-                    yield client_read, client_write
-                finally:
-                    tg.cancel_scope.cancel()
+        pass
 
     async def __aenter__(self) -> TransportStreams:
         """Connect to the server and return streams for communication."""

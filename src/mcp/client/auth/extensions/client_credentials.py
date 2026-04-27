@@ -78,33 +78,15 @@ class ClientCredentialsOAuthProvider(OAuthClientProvider):
 
     async def _initialize(self) -> None:
         """Load stored tokens and set pre-configured client_info."""
-        self.context.current_tokens = await self.context.storage.get_tokens()
-        self.context.client_info = self._fixed_client_info
-        self._initialized = True
+        pass
 
     async def _perform_authorization(self) -> httpx.Request:
         """Perform client_credentials authorization."""
-        return await self._exchange_token_client_credentials()
+        pass
 
     async def _exchange_token_client_credentials(self) -> httpx.Request:
         """Build token exchange request for client_credentials grant."""
-        token_data: dict[str, Any] = {
-            "grant_type": "client_credentials",
-        }
-
-        headers: dict[str, str] = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        # Use standard auth methods (client_secret_basic, client_secret_post, none)
-        token_data, headers = self.context.prepare_token_auth(token_data, headers)
-
-        if self.context.should_include_resource_param(self.context.protocol_version):
-            token_data["resource"] = self.context.get_resource_url()
-
-        if self.context.client_metadata.scope:
-            token_data["scope"] = self.context.client_metadata.scope
-
-        token_url = self._get_token_endpoint()
-        return httpx.Request("POST", token_url, data=token_data, headers=headers)
+        pass
 
 
 def static_assertion_provider(token: str) -> Callable[[str], Awaitable[str]]:
@@ -129,11 +111,7 @@ def static_assertion_provider(token: str) -> Callable[[str], Awaitable[str]]:
     Returns:
         An async callback suitable for use as an assertion_provider.
     """
-
-    async def provider(audience: str) -> str:
-        return token
-
-    return provider
+    pass
 
 
 class SignedJWTParameters(BaseModel):
@@ -172,23 +150,7 @@ class SignedJWTParameters(BaseModel):
             An async callback that takes the audience (authorization server issuer URL)
             and returns a signed JWT assertion.
         """
-
-        async def provider(audience: str) -> str:
-            now = int(time.time())
-            claims: dict[str, Any] = {
-                "iss": self.issuer,
-                "sub": self.subject,
-                "aud": audience,
-                "exp": now + self.lifetime_seconds,
-                "iat": now,
-                "jti": str(uuid4()),
-            }
-            if self.additional_claims:
-                claims.update(self.additional_claims)
-
-            return jwt.encode(claims, self.signing_key, algorithm=self.signing_algorithm)
-
-        return provider
+        pass
 
 
 class PrivateKeyJWTOAuthProvider(OAuthClientProvider):
@@ -292,47 +254,19 @@ class PrivateKeyJWTOAuthProvider(OAuthClientProvider):
 
     async def _initialize(self) -> None:
         """Load stored tokens and set pre-configured client_info."""
-        self.context.current_tokens = await self.context.storage.get_tokens()
-        self.context.client_info = self._fixed_client_info
-        self._initialized = True
+        pass
 
     async def _perform_authorization(self) -> httpx.Request:
         """Perform client_credentials authorization with private_key_jwt."""
-        return await self._exchange_token_client_credentials()
+        pass
 
     async def _add_client_authentication_jwt(self, *, token_data: dict[str, Any]) -> None:
         """Add JWT assertion for client authentication to token endpoint parameters."""
-        if not self.context.oauth_metadata:
-            raise OAuthFlowError("Missing OAuth metadata for private_key_jwt flow")  # pragma: no cover
-
-        # Audience MUST be the issuer identifier of the authorization server
-        # https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-01
-        audience = str(self.context.oauth_metadata.issuer)
-        assertion = await self._assertion_provider(audience)
-
-        # RFC 7523 Section 2.2: client authentication via JWT
-        token_data["client_assertion"] = assertion
-        token_data["client_assertion_type"] = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+        pass
 
     async def _exchange_token_client_credentials(self) -> httpx.Request:
         """Build token exchange request for client_credentials grant with private_key_jwt."""
-        token_data: dict[str, Any] = {
-            "grant_type": "client_credentials",
-        }
-
-        headers: dict[str, str] = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        # Add JWT client authentication (RFC 7523 Section 2.2)
-        await self._add_client_authentication_jwt(token_data=token_data)
-
-        if self.context.should_include_resource_param(self.context.protocol_version):
-            token_data["resource"] = self.context.get_resource_url()
-
-        if self.context.client_metadata.scope:
-            token_data["scope"] = self.context.client_metadata.scope
-
-        token_url = self._get_token_endpoint()
-        return httpx.Request("POST", token_url, data=token_data, headers=headers)
+        pass
 
 
 class JWTParameters(BaseModel):
@@ -353,38 +287,7 @@ class JWTParameters(BaseModel):
     jwt_lifetime_seconds: int = Field(default=300, description="Lifetime of generated JWT in seconds.")
 
     def to_assertion(self, with_audience_fallback: str | None = None) -> str:
-        if self.assertion is not None:
-            # Prebuilt JWT (e.g. acquired out-of-band)
-            assertion = self.assertion
-        else:
-            if not self.jwt_signing_key:
-                raise OAuthFlowError("Missing signing key for JWT bearer grant")  # pragma: no cover
-            if not self.issuer:
-                raise OAuthFlowError("Missing issuer for JWT bearer grant")  # pragma: no cover
-            if not self.subject:
-                raise OAuthFlowError("Missing subject for JWT bearer grant")  # pragma: no cover
-
-            audience = self.audience if self.audience else with_audience_fallback
-            if not audience:
-                raise OAuthFlowError("Missing audience for JWT bearer grant")  # pragma: no cover
-
-            now = int(time.time())
-            claims: dict[str, Any] = {
-                "iss": self.issuer,
-                "sub": self.subject,
-                "aud": audience,
-                "exp": now + self.jwt_lifetime_seconds,
-                "iat": now,
-                "jti": str(uuid4()),
-            }
-            claims.update(self.claims or {})
-
-            assertion = jwt.encode(
-                claims,
-                self.jwt_signing_key,
-                algorithm=self.jwt_signing_algorithm or "RS256",
-            )
-        return assertion
+        pass
 
 
 class RFC7523OAuthClientProvider(OAuthClientProvider):
@@ -422,64 +325,16 @@ class RFC7523OAuthClientProvider(OAuthClientProvider):
         self, auth_code: str, code_verifier: str, *, token_data: dict[str, Any] | None = None
     ) -> httpx.Request:  # pragma: no cover
         """Build token exchange request for authorization_code flow."""
-        token_data = token_data or {}
-        if self.context.client_metadata.token_endpoint_auth_method == "private_key_jwt":
-            self._add_client_authentication_jwt(token_data=token_data)
-        return await super()._exchange_token_authorization_code(auth_code, code_verifier, token_data=token_data)
+        pass
 
     async def _perform_authorization(self) -> httpx.Request:  # pragma: no cover
         """Perform the authorization flow."""
-        if "urn:ietf:params:oauth:grant-type:jwt-bearer" in self.context.client_metadata.grant_types:
-            token_request = await self._exchange_token_jwt_bearer()
-            return token_request
-        else:
-            return await super()._perform_authorization()
+        pass
 
     def _add_client_authentication_jwt(self, *, token_data: dict[str, Any]):  # pragma: no cover
         """Add JWT assertion for client authentication to token endpoint parameters."""
-        if not self.jwt_parameters:
-            raise OAuthTokenError("Missing JWT parameters for private_key_jwt flow")
-        if not self.context.oauth_metadata:
-            raise OAuthTokenError("Missing OAuth metadata for private_key_jwt flow")
-
-        # We need to set the audience to the issuer identifier of the authorization server
-        # https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-01#name-updates-to-rfc-7523
-        issuer = str(self.context.oauth_metadata.issuer)
-        assertion = self.jwt_parameters.to_assertion(with_audience_fallback=issuer)
-
-        # When using private_key_jwt, in a client_credentials flow, we use RFC 7523 Section 2.2
-        token_data["client_assertion"] = assertion
-        token_data["client_assertion_type"] = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
-        # We need to set the audience to the resource server, the audience is different from the one in claims
-        # it represents the resource server that will validate the token
-        token_data["audience"] = self.context.get_resource_url()
+        pass
 
     async def _exchange_token_jwt_bearer(self) -> httpx.Request:
         """Build token exchange request for JWT bearer grant."""
-        if not self.context.client_info:
-            raise OAuthFlowError("Missing client info")  # pragma: no cover
-        if not self.jwt_parameters:
-            raise OAuthFlowError("Missing JWT parameters")  # pragma: no cover
-        if not self.context.oauth_metadata:
-            raise OAuthTokenError("Missing OAuth metadata")  # pragma: no cover
-
-        # We need to set the audience to the issuer identifier of the authorization server
-        # https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-01#name-updates-to-rfc-7523
-        issuer = str(self.context.oauth_metadata.issuer)
-        assertion = self.jwt_parameters.to_assertion(with_audience_fallback=issuer)
-
-        token_data = {
-            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-            "assertion": assertion,
-        }
-
-        if self.context.should_include_resource_param(self.context.protocol_version):  # pragma: no branch
-            token_data["resource"] = self.context.get_resource_url()
-
-        if self.context.client_metadata.scope:  # pragma: no branch
-            token_data["scope"] = self.context.client_metadata.scope
-
-        token_url = self._get_token_endpoint()
-        return httpx.Request(
-            "POST", token_url, data=token_data, headers={"Content-Type": "application/x-www-form-urlencoded"}
-        )
+        pass

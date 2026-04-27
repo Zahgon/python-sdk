@@ -18,31 +18,11 @@ logger = logging.getLogger("server")
 
 
 async def receive_loop(session: ServerSession):
-    logger.info("Starting receive loop")
-    async for message in session.incoming_messages:
-        if isinstance(message, Exception):
-            logger.error("Error: %s", message)
-            continue
-
-        logger.info("Received message from client: %s", message)
+    pass
 
 
 async def main():
-    version = importlib.metadata.version("mcp")
-    async with stdio_server() as (read_stream, write_stream):
-        async with (
-            ServerSession(
-                read_stream,
-                write_stream,
-                InitializationOptions(
-                    server_name="mcp",
-                    server_version=version,
-                    capabilities=ServerCapabilities(),
-                ),
-            ) as session,
-            write_stream,
-        ):
-            await receive_loop(session)
+    pass
 
 
 if __name__ == "__main__":

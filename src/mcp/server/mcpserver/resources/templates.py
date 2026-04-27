@@ -89,13 +89,7 @@ class ResourceTemplate(BaseModel):
 
         Extracted parameters are URL-decoded to handle percent-encoded characters.
         """
-        # Convert template to regex pattern
-        pattern = self.uri_template.replace("{", "(?P<").replace("}", ">[^/]+)")
-        match = re.match(f"^{pattern}$", uri)
-        if match:
-            # URL-decode all extracted parameter values
-            return {key: unquote(value) for key, value in match.groupdict().items()}
-        return None
+        pass
 
     async def create_resource(
         self,
@@ -108,26 +102,4 @@ class ResourceTemplate(BaseModel):
         Raises:
             ValueError: If creating the resource fails.
         """
-        try:
-            # Add context to params if needed
-            params = inject_context(self.fn, params, context, self.context_kwarg)
-
-            fn = self.fn
-            if is_async_callable(fn):
-                result = await fn(**params)
-            else:
-                result = await anyio.to_thread.run_sync(functools.partial(self.fn, **params))
-
-            return FunctionResource(
-                uri=uri,  # type: ignore
-                name=self.name,
-                title=self.title,
-                description=self.description,
-                mime_type=self.mime_type,
-                icons=self.icons,
-                annotations=self.annotations,
-                meta=self.meta,
-                fn=lambda: result,  # Capture result in closure
-            )
-        except Exception as e:
-            raise ValueError(f"Error creating resource from template: {e}")
+        pass

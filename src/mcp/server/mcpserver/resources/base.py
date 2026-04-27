@@ -32,11 +32,7 @@ class Resource(BaseModel, abc.ABC):
     @classmethod
     def set_default_name(cls, name: str | None, info: ValidationInfo) -> str:
         """Set default name from URI if not provided."""
-        if name:
-            return name
-        if uri := info.data.get("uri"):
-            return str(uri)
-        raise ValueError("Either name or uri must be provided")
+        pass
 
     @abc.abstractmethod
     async def read(self) -> str | bytes:

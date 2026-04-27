@@ -170,22 +170,15 @@ class InMemoryTaskMessageQueue(TaskMessageQueue):
 
     async def dequeue(self, task_id: str) -> QueuedMessage | None:
         """Remove and return the next message."""
-        queue = self._get_queue(task_id)
-        if not queue:
-            return None
-        return queue.popleft()
+        pass
 
     async def peek(self, task_id: str) -> QueuedMessage | None:
         """Return the next message without removing it."""
-        queue = self._get_queue(task_id)
-        if not queue:
-            return None
-        return queue[0]
+        pass
 
     async def is_empty(self, task_id: str) -> bool:
         """Check if the queue is empty."""
-        queue = self._get_queue(task_id)
-        return len(queue) == 0
+        pass
 
     async def clear(self, task_id: str) -> list[QueuedMessage]:
         """Remove and return all messages."""
@@ -196,20 +189,7 @@ class InMemoryTaskMessageQueue(TaskMessageQueue):
 
     async def wait_for_message(self, task_id: str) -> None:
         """Wait until a message is available."""
-        # Check if there are already messages
-        if not await self.is_empty(task_id):
-            return
-
-        # Create a fresh event for waiting (anyio.Event can't be cleared)
-        self._events[task_id] = anyio.Event()
-        event = self._events[task_id]
-
-        # Double-check after creating event (avoid race condition)
-        if not await self.is_empty(task_id):
-            return
-
-        # Wait for a new message
-        await event.wait()
+        pass
 
     async def notify_message_available(self, task_id: str) -> None:
         """Signal that a message is available."""
@@ -222,9 +202,4 @@ class InMemoryTaskMessageQueue(TaskMessageQueue):
         Args:
             task_id: If provided, clean up only this task. Otherwise clean up all.
         """
-        if task_id is not None:
-            self._queues.pop(task_id, None)
-            self._events.pop(task_id, None)
-        else:
-            self._queues.clear()
-            self._events.clear()
+        pass

@@ -41,25 +41,12 @@ app = typer.Typer(
 
 def _get_npx_command():
     """Get the correct npx command for the current platform."""
-    if sys.platform == "win32":
-        # Try both npx.cmd and npx.exe on Windows
-        for cmd in ["npx.cmd", "npx.exe", "npx"]:
-            try:
-                subprocess.run([cmd, "--version"], check=True, capture_output=True, shell=True)
-                return cmd
-            except subprocess.CalledProcessError:
-                continue
-        return None
-    return "npx"  # On Unix-like systems, just use npx
+    pass
 
 
 def _parse_env_var(env_var: str) -> tuple[str, str]:  # pragma: no cover
     """Parse environment variable string in format KEY=VALUE."""
-    if "=" not in env_var:
-        logger.error(f"Invalid environment variable format: {env_var}. Must be KEY=VALUE")
-        sys.exit(1)
-    key, value = env_var.split("=", 1)
-    return key.strip(), value.strip()
+    pass
 
 
 def _build_uv_command(
@@ -68,21 +55,7 @@ def _build_uv_command(
     with_packages: list[str] | None = None,
 ) -> list[str]:
     """Build the uv run command that runs an MCP server through mcp run."""
-    cmd = ["uv"]
-
-    cmd.extend(["run", "--with", "mcp"])
-
-    if with_editable:
-        cmd.extend(["--with-editable", str(with_editable)])
-
-    if with_packages:
-        for pkg in with_packages:
-            if pkg:  # pragma: no branch
-                cmd.extend(["--with", pkg])
-
-    # Add mcp run command
-    cmd.extend(["mcp", "run", file_spec])
-    return cmd
+    pass
 
 
 def _parse_file_path(file_spec: str) -> tuple[Path, str | None]:
@@ -209,12 +182,7 @@ def _import_server(file: Path, server_object: str | None = None):  # pragma: no 
 @app.command()
 def version() -> None:  # pragma: no cover
     """Show the MCP version."""
-    try:
-        version = importlib.metadata.version("mcp")
-        print(f"MCP version {version}")
-    except importlib.metadata.PackageNotFoundError:
-        print("MCP version unknown (package not installed)")
-        sys.exit(1)
+    pass
 
 
 @app.command()
@@ -243,61 +211,7 @@ def dev(
     ] = [],
 ) -> None:  # pragma: no cover
     """Run an MCP server with the MCP Inspector."""
-    file, server_object = _parse_file_path(file_spec)
-
-    logger.debug(
-        "Starting dev server",
-        extra={
-            "file": str(file),
-            "server_object": server_object,
-            "with_editable": str(with_editable) if with_editable else None,
-            "with_packages": with_packages,
-        },
-    )
-
-    try:
-        # Import server to get dependencies
-        server = _import_server(file, server_object)
-        if hasattr(server, "dependencies"):
-            with_packages = list(set(with_packages + server.dependencies))
-
-        uv_cmd = _build_uv_command(file_spec, with_editable, with_packages)
-
-        # Get the correct npx command
-        npx_cmd = _get_npx_command()
-        if not npx_cmd:
-            logger.error(
-                "npx not found. Please ensure Node.js and npm are properly installed and added to your system PATH."
-            )
-            sys.exit(1)
-
-        # Run the MCP Inspector command with shell=True on Windows
-        shell = sys.platform == "win32"
-        process = subprocess.run(
-            [npx_cmd, "@modelcontextprotocol/inspector"] + uv_cmd,
-            check=True,
-            shell=shell,
-            env=dict(os.environ.items()),  # Convert to list of tuples for env update
-        )
-        sys.exit(process.returncode)
-    except subprocess.CalledProcessError as e:
-        logger.error(
-            "Dev server failed",
-            extra={
-                "file": str(file),
-                "error": str(e),
-                "returncode": e.returncode,
-            },
-        )
-        sys.exit(e.returncode)
-    except FileNotFoundError:
-        logger.error(
-            "npx not found. Please ensure Node.js and npm are properly installed "
-            "and added to your system PATH. You may need to restart your terminal "
-            "after installation.",
-            extra={"file": str(file)},
-        )
-        sys.exit(1)
+    pass
 
 
 @app.command()
@@ -415,72 +329,4 @@ def install(
     Environment variables are preserved once added and only updated if new values
     are explicitly provided.
     """
-    file, server_object = _parse_file_path(file_spec)
-
-    logger.debug(
-        "Installing server",
-        extra={
-            "file": str(file),
-            "server_name": server_name,
-            "server_object": server_object,
-            "with_editable": str(with_editable) if with_editable else None,
-            "with_packages": with_packages,
-        },
-    )
-
-    if not claude.get_claude_config_path():
-        logger.error("Claude app not found")
-        sys.exit(1)
-
-    # Try to import server to get its name, but fall back to file name if dependencies
-    # missing
-    name = server_name
-    server = None
-    if not name:
-        try:
-            server = _import_server(file, server_object)
-            name = server.name
-        except (ImportError, ModuleNotFoundError) as e:
-            logger.debug(
-                "Could not import server (likely missing dependencies), using file name",
-                extra={"error": str(e)},
-            )
-            name = file.stem
-
-    # Get server dependencies if available
-    server_dependencies = getattr(server, "dependencies", []) if server else []
-    if server_dependencies:
-        with_packages = list(set(with_packages + server_dependencies))
-
-    # Process environment variables if provided
-    env_dict: dict[str, str] | None = None
-    if env_file or env_vars:
-        env_dict = {}
-        # Load from .env file if specified
-        if env_file:
-            if dotenv:
-                try:
-                    env_dict |= {k: v for k, v in dotenv.dotenv_values(env_file).items() if v is not None}
-                except (OSError, ValueError):
-                    logger.exception("Failed to load .env file")
-                    sys.exit(1)
-            else:
-                logger.error("python-dotenv is not installed. Cannot load .env file.")
-                sys.exit(1)
-
-        # Add command line environment variables
-        for env_var in env_vars:
-            key, value = _parse_env_var(env_var)
-            env_dict[key] = value
-
-    if claude.update_claude_config(
-        file_spec,
-        name,
-        with_editable=with_editable,
-        with_packages=with_packages,
-        env_vars=env_dict,
-    ):
-        logger.info(f"Successfully installed {name} in Claude app")
-    else:
-        logger.error(f"Failed to install {name} in Claude app")
-        sys.exit(1)
+    pass

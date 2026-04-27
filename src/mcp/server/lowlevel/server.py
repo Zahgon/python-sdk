@@ -95,7 +95,7 @@ async def lifespan(_: Server[LifespanResultT]) -> AsyncIterator[dict[str, Any]]:
 
 
 async def _ping_handler(ctx: ServerRequestContext[Any], params: types.RequestParams | None) -> types.EmptyResult:
-    return types.EmptyResult()
+    pass
 
 
 class Server(Generic[LifespanResultT]):
@@ -240,7 +240,7 @@ class Server(Generic[LifespanResultT]):
         handler: Callable[[ServerRequestContext[LifespanResultT], Any], Awaitable[Any]],
     ) -> None:
         """Add a request handler, silently replacing any existing handler for the same method."""
-        self._request_handlers[method] = handler
+        pass
 
     def _has_handler(self, method: str) -> bool:
         """Check if a handler is registered for the given method."""
@@ -333,14 +333,7 @@ class Server(Generic[LifespanResultT]):
 
         WARNING: These APIs are experimental and may change without notice.
         """
-
-        # We create this inline so we only add these capabilities _if_ they're actually used
-        if self._experimental_handlers is None:
-            self._experimental_handlers = ExperimentalHandlers(
-                add_request_handler=self._add_request_handler,
-                has_handler=self._has_handler,
-            )
-        return self._experimental_handlers
+        pass
 
     @property
     def session_manager(self) -> StreamableHTTPSessionManager:
@@ -349,12 +342,7 @@ class Server(Generic[LifespanResultT]):
         Raises:
             RuntimeError: If called before streamable_http_app() has been called.
         """
-        if self._session_manager is None:  # pragma: no cover
-            raise RuntimeError(
-                "Session manager can only be accessed after calling streamable_http_app(). "
-                "The session manager is created lazily to avoid unnecessary initialization."
-            )
-        return self._session_manager  # pragma: no cover
+        pass
 
     async def run(
         self,
@@ -421,22 +409,7 @@ class Server(Generic[LifespanResultT]):
         lifespan_context: LifespanResultT,
         raise_exceptions: bool = False,
     ):
-        with warnings.catch_warnings(record=True) as w:
-            match message:
-                case RequestResponder() as responder:
-                    with responder:
-                        await self._handle_request(
-                            message, responder.request, session, lifespan_context, raise_exceptions
-                        )
-                case Exception():
-                    logger.error(f"Received exception from stream: {message}")
-                    if raise_exceptions:
-                        raise message
-                case _:
-                    await self._handle_notification(message, session, lifespan_context)
-
-            for warning in w:  # pragma: lax no cover
-                logger.info("Warning: %s: %s", warning.category.__name__, warning.message)
+        pass
 
     async def _handle_request(
         self,
@@ -446,92 +419,7 @@ class Server(Generic[LifespanResultT]):
         lifespan_context: LifespanResultT,
         raise_exceptions: bool,
     ):
-        logger.info("Processing request of type %s", type(req).__name__)
-
-        target = getattr(req.params, "name", None) if req.params else None
-        span_name = f"MCP handle {req.method} {target}" if target else f"MCP handle {req.method}"
-
-        # Extract W3C trace context from _meta (SEP-414).
-        meta = cast(dict[str, Any] | None, getattr(req.params, "meta", None)) if req.params else None
-        parent_context = extract_trace_context(meta) if meta is not None else None
-
-        with otel_span(
-            span_name,
-            kind=SpanKind.SERVER,
-            attributes={"mcp.method.name": req.method, "jsonrpc.request.id": message.request_id},
-            context=parent_context,
-        ) as span:
-            if handler := self._request_handlers.get(req.method):
-                logger.debug("Dispatching request of type %s", type(req).__name__)
-
-                try:
-                    # Extract request context and close_sse_stream from message metadata
-                    request_data = None
-                    close_sse_stream_cb = None
-                    close_standalone_sse_stream_cb = None
-                    if message.message_metadata is not None and isinstance(
-                        message.message_metadata, ServerMessageMetadata
-                    ):
-                        request_data = message.message_metadata.request_context
-                        close_sse_stream_cb = message.message_metadata.close_sse_stream
-                        close_standalone_sse_stream_cb = message.message_metadata.close_standalone_sse_stream
-
-                    client_capabilities = session.client_params.capabilities if session.client_params else None
-                    task_support = self._experimental_handlers.task_support if self._experimental_handlers else None
-                    # Get task metadata from request params if present
-                    task_metadata = None
-                    if hasattr(req, "params") and req.params is not None:  # pragma: no branch
-                        task_metadata = getattr(req.params, "task", None)
-                    ctx = ServerRequestContext(
-                        request_id=message.request_id,
-                        meta=message.request_meta,
-                        session=session,
-                        lifespan_context=lifespan_context,
-                        experimental=Experimental(
-                            task_metadata=task_metadata,
-                            _client_capabilities=client_capabilities,
-                            _session=session,
-                            _task_support=task_support,
-                        ),
-                        request=request_data,
-                        close_sse_stream=close_sse_stream_cb,
-                        close_standalone_sse_stream=close_standalone_sse_stream_cb,
-                    )
-                    response = await handler(ctx, req.params)
-                except MCPError as err:
-                    response = err.error
-                except anyio.get_cancelled_exc_class():
-                    if message.cancelled:
-                        # Client sent CancelledNotification; responder.cancel() already
-                        # sent an error response, so skip the duplicate.
-                        logger.info("Request %s cancelled - duplicate response suppressed", message.request_id)
-                        return
-                    # Transport-close cancellation from the TG in run(); re-raise so the
-                    # TG swallows its own cancellation.
-                    raise
-                except Exception as err:
-                    if raise_exceptions:  # pragma: no cover
-                        raise err
-                    response = types.ErrorData(code=0, message=str(err))
-            else:  # pragma: no cover
-                response = types.ErrorData(code=types.METHOD_NOT_FOUND, message="Method not found")
-
-            if isinstance(response, types.ErrorData) and span is not None:
-                span.set_status(StatusCode.ERROR, response.message)
-
-            try:
-                await message.respond(response)
-            except (anyio.BrokenResourceError, anyio.ClosedResourceError):
-                # Transport closed between handler unblocking and respond. Happens
-                # when _receive_loop's finally wakes a handler blocked on
-                # send_request: the handler runs to respond() before run()'s TG
-                # cancel fires, but after the write stream closed. Closed if our
-                # end closed (_receive_loop's async-with exit); Broken if the peer
-                # end closed first (streamable_http terminate()).
-                logger.debug("Response for %s dropped - transport closed", message.request_id)
-                return
-
-            logger.debug("Response sent")
+        pass
 
     async def _handle_notification(
         self,
@@ -539,25 +427,7 @@ class Server(Generic[LifespanResultT]):
         session: ServerSession,
         lifespan_context: LifespanResultT,
     ) -> None:
-        if handler := self._notification_handlers.get(notify.method):
-            logger.debug("Dispatching notification of type %s", type(notify).__name__)
-
-            try:
-                client_capabilities = session.client_params.capabilities if session.client_params else None
-                task_support = self._experimental_handlers.task_support if self._experimental_handlers else None
-                ctx = ServerRequestContext(
-                    session=session,
-                    lifespan_context=lifespan_context,
-                    experimental=Experimental(
-                        task_metadata=None,
-                        _client_capabilities=client_capabilities,
-                        _session=session,
-                        _task_support=task_support,
-                    ),
-                )
-                await handler(ctx, notify.params)
-            except Exception:  # pragma: no cover
-                logger.exception("Uncaught exception in notification handler")
+        pass
 
     def streamable_http_app(
         self,

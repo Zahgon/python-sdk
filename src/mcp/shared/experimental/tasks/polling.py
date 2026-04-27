@@ -32,12 +32,4 @@ async def poll_until_terminal(
     Yields:
         GetTaskResult for each poll
     """
-    while True:
-        status = await get_task(task_id)
-        yield status
-
-        if is_terminal(status.status):
-            break
-
-        interval_ms = status.poll_interval if status.poll_interval is not None else default_interval_ms
-        await anyio.sleep(interval_ms / 1000)
+    pass

@@ -63,9 +63,7 @@ class TaskSupport:
         Raises:
             RuntimeError: If not within a run() context
         """
-        if self._task_group is None:
-            raise RuntimeError("TaskSupport not running. Ensure Server.run() is active.")
-        return self._task_group
+        pass
 
     @asynccontextmanager
     async def run(self) -> AsyncIterator[None]:
@@ -110,7 +108,4 @@ class TaskSupport:
         Returns:
             TaskSupport configured with in-memory store and queue
         """
-        return cls(
-            store=InMemoryTaskStore(),
-            queue=InMemoryTaskMessageQueue(),
-        )
+        pass

@@ -48,10 +48,7 @@ class ExperimentalServerSessionFeatures:
         Returns:
             GetTaskResult containing the task status
         """
-        return await self._session.send_request(
-            types.GetTaskRequest(params=types.GetTaskRequestParams(task_id=task_id)),
-            types.GetTaskResult,
-        )
+        pass
 
     async def get_task_result(
         self,
@@ -67,10 +64,7 @@ class ExperimentalServerSessionFeatures:
         Returns:
             The task result, validated against result_type
         """
-        return await self._session.send_request(
-            types.GetTaskPayloadRequest(params=types.GetTaskPayloadRequestParams(task_id=task_id)),
-            result_type,
-        )
+        pass
 
     async def poll_task(self, task_id: str) -> AsyncIterator[types.GetTaskResult]:
         """Poll a client task until it reaches terminal status.
@@ -86,8 +80,7 @@ class ExperimentalServerSessionFeatures:
         Yields:
             GetTaskResult for each poll
         """
-        async for status in poll_until_terminal(self.get_task, task_id):
-            yield status
+        pass
 
     async def elicit_as_task(
         self,
@@ -116,26 +109,7 @@ class ExperimentalServerSessionFeatures:
         Raises:
             MCPError: If client doesn't support task-augmented elicitation
         """
-        client_caps = self._session.client_params.capabilities if self._session.client_params else None
-        require_task_augmented_elicitation(client_caps)
-
-        create_result = await self._session.send_request(
-            types.ElicitRequest(
-                params=types.ElicitRequestFormParams(
-                    message=message,
-                    requested_schema=requested_schema,
-                    task=types.TaskMetadata(ttl=ttl),
-                )
-            ),
-            types.CreateTaskResult,
-        )
-
-        task_id = create_result.task.task_id
-
-        async for _ in self.poll_task(task_id):
-            pass
-
-        return await self.get_task_result(task_id, types.ElicitResult)
+        pass
 
     async def create_message_as_task(
         self,
@@ -177,33 +151,4 @@ class ExperimentalServerSessionFeatures:
             MCPError: If client doesn't support task-augmented sampling or tools
             ValueError: If tool_use or tool_result message structure is invalid
         """
-        client_caps = self._session.client_params.capabilities if self._session.client_params else None
-        require_task_augmented_sampling(client_caps)
-        validate_sampling_tools(client_caps, tools, tool_choice)
-        validate_tool_use_result_messages(messages)
-
-        create_result = await self._session.send_request(
-            types.CreateMessageRequest(
-                params=types.CreateMessageRequestParams(
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    system_prompt=system_prompt,
-                    include_context=include_context,
-                    temperature=temperature,
-                    stop_sequences=stop_sequences,
-                    metadata=metadata,
-                    model_preferences=model_preferences,
-                    tools=tools,
-                    tool_choice=tool_choice,
-                    task=types.TaskMetadata(ttl=ttl),
-                )
-            ),
-            types.CreateTaskResult,
-        )
-
-        task_id = create_result.task.task_id
-
-        async for _ in self.poll_task(task_id):
-            pass
-
-        return await self.get_task_result(task_id, types.CreateMessageResult)
+        pass

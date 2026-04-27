@@ -63,7 +63,7 @@ class ExperimentalHandlers(Generic[LifespanResultT]):
     @property
     def task_support(self) -> TaskSupport | None:
         """Get the task support configuration, if enabled."""
-        return self._task_support
+        pass
 
     def update_capabilities(self, capabilities: ServerCapabilities) -> None:
         # Only add tasks capability if handlers are registered
@@ -135,76 +135,4 @@ class ExperimentalHandlers(Generic[LifespanResultT]):
 
         WARNING: This API is experimental and may change without notice.
         """
-        if store is None:
-            store = InMemoryTaskStore()
-        if queue is None:
-            queue = InMemoryTaskMessageQueue()
-
-        self._task_support = TaskSupport(store=store, queue=queue)
-        task_support = self._task_support
-
-        # Register user-provided handlers
-        if on_get_task is not None:
-            self._add_request_handler("tasks/get", on_get_task)
-        if on_task_result is not None:
-            self._add_request_handler("tasks/result", on_task_result)
-        if on_list_tasks is not None:
-            self._add_request_handler("tasks/list", on_list_tasks)
-        if on_cancel_task is not None:
-            self._add_request_handler("tasks/cancel", on_cancel_task)
-
-        # Fill in defaults for any not provided
-        if not self._has_handler("tasks/get"):
-
-            async def _default_get_task(
-                ctx: ServerRequestContext[LifespanResultT], params: GetTaskRequestParams
-            ) -> GetTaskResult:
-                task = await task_support.store.get_task(params.task_id)
-                if task is None:
-                    raise MCPError(code=INVALID_PARAMS, message=f"Task not found: {params.task_id}")
-                return GetTaskResult(
-                    task_id=task.task_id,
-                    status=task.status,
-                    status_message=task.status_message,
-                    created_at=task.created_at,
-                    last_updated_at=task.last_updated_at,
-                    ttl=task.ttl,
-                    poll_interval=task.poll_interval,
-                )
-
-            self._add_request_handler("tasks/get", _default_get_task)
-
-        if not self._has_handler("tasks/result"):
-
-            async def _default_get_task_result(
-                ctx: ServerRequestContext[LifespanResultT], params: GetTaskPayloadRequestParams
-            ) -> GetTaskPayloadResult:
-                assert ctx.request_id is not None
-                req = GetTaskPayloadRequest(params=params)
-                result = await task_support.handler.handle(req, ctx.session, ctx.request_id)
-                return result
-
-            self._add_request_handler("tasks/result", _default_get_task_result)
-
-        if not self._has_handler("tasks/list"):
-
-            async def _default_list_tasks(
-                ctx: ServerRequestContext[LifespanResultT], params: PaginatedRequestParams | None
-            ) -> ListTasksResult:
-                cursor = params.cursor if params else None
-                tasks, next_cursor = await task_support.store.list_tasks(cursor)
-                return ListTasksResult(tasks=tasks, next_cursor=next_cursor)
-
-            self._add_request_handler("tasks/list", _default_list_tasks)
-
-        if not self._has_handler("tasks/cancel"):
-
-            async def _default_cancel_task(
-                ctx: ServerRequestContext[LifespanResultT], params: CancelTaskRequestParams
-            ) -> CancelTaskResult:
-                result = await cancel_task(task_support.store, params.task_id)
-                return result
-
-            self._add_request_handler("tasks/cancel", _default_cancel_task)
-
-        return task_support
+        pass

@@ -73,16 +73,12 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
     @property
     def mcp_server(self) -> MCPServer:
         """Access to the MCPServer instance."""
-        if self._mcp_server is None:  # pragma: no cover
-            raise ValueError("Context is not available outside of a request")
-        return self._mcp_server  # pragma: no cover
+        pass
 
     @property
     def request_context(self) -> ServerRequestContext[LifespanContextT, RequestT]:
         """Access to the underlying request context."""
-        if self._request_context is None:  # pragma: no cover
-            raise ValueError("Context is not available outside of a request")
-        return self._request_context
+        pass
 
     async def report_progress(self, progress: float, total: float | None = None, message: str | None = None) -> None:
         """Report progress for the current operation.
@@ -92,18 +88,7 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
             total: Optional total value (e.g., 100)
             message: Optional message (e.g., "Starting render...")
         """
-        progress_token = self.request_context.meta.get("progress_token") if self.request_context.meta else None
-
-        if progress_token is None:  # pragma: no cover
-            return
-
-        await self.request_context.session.send_progress_notification(
-            progress_token=progress_token,
-            progress=progress,
-            total=total,
-            message=message,
-            related_request_id=self.request_id,
-        )
+        pass
 
     async def read_resource(self, uri: str | AnyUrl) -> Iterable[ReadResourceContents]:
         """Read a resource by URI.
@@ -114,8 +99,7 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
         Returns:
             The resource content as either text or bytes
         """
-        assert self._mcp_server is not None, "Context is not available outside of a request"
-        return await self._mcp_server.read_resource(uri, self)
+        pass
 
     async def elicit(
         self,
@@ -177,13 +161,7 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
         Returns:
             UrlElicitationResult indicating accept, decline, or cancel
         """
-        return await elicit_url(
-            session=self.request_context.session,
-            message=message,
-            url=url,
-            elicitation_id=elicitation_id,
-            related_request_id=self.request_id,
-        )
+        pass
 
     async def log(
         self,
@@ -211,17 +189,17 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
     @property
     def client_id(self) -> str | None:
         """Get the client ID if available."""
-        return self.request_context.meta.get("client_id") if self.request_context.meta else None  # pragma: no cover
+        pass
 
     @property
     def request_id(self) -> str:
         """Get the unique ID for this request."""
-        return str(self.request_context.request_id)
+        pass
 
     @property
     def session(self):
         """Access to the underlying session for advanced usage."""
-        return self.request_context.session
+        pass
 
     async def close_sse_stream(self) -> None:
         """Close the SSE stream to trigger client reconnection.
@@ -237,8 +215,7 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
             This is a no-op if not using StreamableHTTP transport with event_store.
             The callback is only available when event_store is configured.
         """
-        if self._request_context and self._request_context.close_sse_stream:  # pragma: no cover
-            await self._request_context.close_sse_stream()
+        pass
 
     async def close_standalone_sse_stream(self) -> None:
         """Close the standalone GET SSE stream to trigger client reconnection.
@@ -252,8 +229,7 @@ class Context(BaseModel, Generic[LifespanContextT, RequestT]):
             Currently, client reconnection for standalone GET streams is NOT
             implemented - this is a known gap.
         """
-        if self._request_context and self._request_context.close_standalone_sse_stream:  # pragma: no cover
-            await self._request_context.close_standalone_sse_stream()
+        pass
 
     # Convenience methods for common log levels
     async def debug(self, data: Any, *, logger_name: str | None = None) -> None:

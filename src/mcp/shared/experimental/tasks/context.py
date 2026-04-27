@@ -39,17 +39,17 @@ class TaskContext:
     @property
     def task_id(self) -> str:
         """The task identifier."""
-        return self._task.task_id
+        pass
 
     @property
     def task(self) -> Task:
         """The current task state."""
-        return self._task
+        pass
 
     @property
     def is_cancelled(self) -> bool:
         """Whether cancellation has been requested."""
-        return self._cancelled
+        pass
 
     def request_cancellation(self) -> None:
         """Request cancellation of this task.
@@ -57,7 +57,7 @@ class TaskContext:
         This sets is_cancelled=True. Task work should check this
         periodically and exit gracefully if set.
         """
-        self._cancelled = True
+        pass
 
     async def update_status(self, message: str) -> None:
         """Update the task's status message.
@@ -65,10 +65,7 @@ class TaskContext:
         Args:
             message: The new status message
         """
-        self._task = await self._store.update_task(
-            self.task_id,
-            status_message=message,
-        )
+        pass
 
     async def complete(self, result: Result) -> None:
         """Mark the task as completed with the given result.
@@ -76,11 +73,7 @@ class TaskContext:
         Args:
             result: The task result
         """
-        await self._store.store_result(self.task_id, result)
-        self._task = await self._store.update_task(
-            self.task_id,
-            status=TASK_STATUS_COMPLETED,
-        )
+        pass
 
     async def fail(self, error: str) -> None:
         """Mark the task as failed with an error message.
@@ -88,8 +81,4 @@ class TaskContext:
         Args:
             error: The error message
         """
-        self._task = await self._store.update_task(
-            self.task_id,
-            status=TASK_STATUS_FAILED,
-            status_message=error,
-        )
+        pass

@@ -62,10 +62,7 @@ class PKCEParameters(BaseModel):
     @classmethod
     def generate(cls) -> "PKCEParameters":
         """Generate new PKCE parameters."""
-        code_verifier = "".join(secrets.choice(string.ascii_letters + string.digits + "-._~") for _ in range(128))
-        digest = hashlib.sha256(code_verifier.encode()).digest()
-        code_challenge = base64.urlsafe_b64encode(digest).decode().rstrip("=")
-        return cls(code_verifier=code_verifier, code_challenge=code_challenge)
+        pass
 
 
 class TokenStorage(Protocol):
@@ -118,44 +115,30 @@ class OAuthContext:
 
     def get_authorization_base_url(self, server_url: str) -> str:
         """Extract base URL by removing path component."""
-        parsed = urlparse(server_url)
-        return f"{parsed.scheme}://{parsed.netloc}"
+        pass
 
     def update_token_expiry(self, token: OAuthToken) -> None:
         """Update token expiry time using shared util function."""
-        self.token_expiry_time = calculate_token_expiry(token.expires_in)
+        pass
 
     def is_token_valid(self) -> bool:
         """Check if current token is valid."""
-        return bool(
-            self.current_tokens
-            and self.current_tokens.access_token
-            and (not self.token_expiry_time or time.time() <= self.token_expiry_time)
-        )
+        pass
 
     def can_refresh_token(self) -> bool:
         """Check if token can be refreshed."""
-        return bool(self.current_tokens and self.current_tokens.refresh_token and self.client_info)
+        pass
 
     def clear_tokens(self) -> None:
         """Clear current tokens."""
-        self.current_tokens = None
-        self.token_expiry_time = None
+        pass
 
     def get_resource_url(self) -> str:
         """Get resource URL for RFC 8707.
 
         Uses PRM resource if it's a valid parent, otherwise uses canonical server URL.
         """
-        resource = resource_url_from_server_url(self.server_url)
-
-        # If PRM provides a resource that's a valid parent, use it
-        if self.protected_resource_metadata and self.protected_resource_metadata.resource:
-            prm_resource = str(self.protected_resource_metadata.resource)
-            if check_resource_allowed(requested_resource=resource, configured_resource=prm_resource):
-                resource = prm_resource
-
-        return resource
+        pass
 
     def should_include_resource_param(self, protocol_version: str | None = None) -> bool:
         """Determine if the resource parameter should be included in OAuth requests.
@@ -164,17 +147,7 @@ class OAuthContext:
         - Protected resource metadata is available, OR
         - MCP-Protocol-Version header is 2025-06-18 or later
         """
-        # If we have protected resource metadata, include the resource param
-        if self.protected_resource_metadata is not None:
-            return True
-
-        # If no protocol version provided, don't include resource param
-        if not protocol_version:
-            return False
-
-        # Check if protocol version is 2025-06-18 or later
-        # Version format is YYYY-MM-DD, so string comparison works
-        return protocol_version >= "2025-06-18"
+        pass
 
     def prepare_token_auth(
         self, data: dict[str, str], headers: dict[str, str] | None = None
@@ -188,30 +161,7 @@ class OAuthContext:
         Returns:
             Tuple of (updated_data, updated_headers)
         """
-        if headers is None:
-            headers = {}  # pragma: no cover
-
-        if not self.client_info:
-            return data, headers
-
-        auth_method = self.client_info.token_endpoint_auth_method
-
-        if auth_method == "client_secret_basic" and self.client_info.client_id and self.client_info.client_secret:
-            # URL-encode client ID and secret per RFC 6749 Section 2.3.1
-            encoded_id = quote(self.client_info.client_id, safe="")
-            encoded_secret = quote(self.client_info.client_secret, safe="")
-            credentials = f"{encoded_id}:{encoded_secret}"
-            encoded_credentials = base64.b64encode(credentials.encode()).decode()
-            headers["Authorization"] = f"Basic {encoded_credentials}"
-            # Don't include client_secret in body for basic auth
-            data = {k: v for k, v in data.items() if k != "client_secret"}
-        elif auth_method == "client_secret_post" and self.client_info.client_id and self.client_info.client_secret:
-            # Include client_id and client_secret in request body (RFC 6749 §2.3.1)
-            data["client_id"] = self.client_info.client_id
-            data["client_secret"] = self.client_info.client_secret
-        # For auth_method == "none", don't add any client_secret
-
-        return data, headers
+        pass
 
 
 class OAuthClientProvider(httpx.Auth):
@@ -281,366 +231,52 @@ class OAuthClientProvider(httpx.Auth):
         Returns:
             True if metadata was successfully discovered, False if we should try next URL
         """
-        if response.status_code == 200:
-            try:
-                content = await response.aread()
-                metadata = ProtectedResourceMetadata.model_validate_json(content)
-                self.context.protected_resource_metadata = metadata
-                if metadata.authorization_servers:  # pragma: no branch
-                    self.context.auth_server_url = str(metadata.authorization_servers[0])
-                return True
-
-            except ValidationError:  # pragma: no cover
-                # Invalid metadata - try next URL
-                logger.warning(f"Invalid protected resource metadata at {response.request.url}")
-                return False
-        elif response.status_code == 404:  # pragma: no cover
-            # Not found - try next URL in fallback chain
-            logger.debug(f"Protected resource metadata not found at {response.request.url}, trying next URL")
-            return False
-        else:
-            # Other error - fail immediately
-            raise OAuthFlowError(
-                f"Protected Resource Metadata request failed: {response.status_code}"
-            )  # pragma: no cover
+        pass
 
     async def _perform_authorization(self) -> httpx.Request:
         """Perform the authorization flow."""
-        auth_code, code_verifier = await self._perform_authorization_code_grant()
-        token_request = await self._exchange_token_authorization_code(auth_code, code_verifier)
-        return token_request
+        pass
 
     async def _perform_authorization_code_grant(self) -> tuple[str, str]:
         """Perform the authorization redirect and get auth code."""
-        if self.context.client_metadata.redirect_uris is None:
-            raise OAuthFlowError("No redirect URIs provided for authorization code grant")  # pragma: no cover
-        if not self.context.redirect_handler:
-            raise OAuthFlowError("No redirect handler provided for authorization code grant")  # pragma: no cover
-        if not self.context.callback_handler:
-            raise OAuthFlowError("No callback handler provided for authorization code grant")  # pragma: no cover
-
-        if self.context.oauth_metadata and self.context.oauth_metadata.authorization_endpoint:
-            auth_endpoint = str(self.context.oauth_metadata.authorization_endpoint)
-        else:
-            auth_base_url = self.context.get_authorization_base_url(self.context.server_url)
-            auth_endpoint = urljoin(auth_base_url, "/authorize")
-
-        if not self.context.client_info:
-            raise OAuthFlowError("No client info available for authorization")  # pragma: no cover
-
-        # Generate PKCE parameters
-        pkce_params = PKCEParameters.generate()
-        state = secrets.token_urlsafe(32)
-
-        auth_params = {
-            "response_type": "code",
-            "client_id": self.context.client_info.client_id,
-            "redirect_uri": str(self.context.client_metadata.redirect_uris[0]),
-            "state": state,
-            "code_challenge": pkce_params.code_challenge,
-            "code_challenge_method": "S256",
-        }
-
-        # Only include resource param if conditions are met
-        if self.context.should_include_resource_param(self.context.protocol_version):
-            auth_params["resource"] = self.context.get_resource_url()  # RFC 8707
-
-        if self.context.client_metadata.scope:  # pragma: no branch
-            auth_params["scope"] = self.context.client_metadata.scope
-
-            # OIDC requires prompt=consent when offline_access is requested
-            # https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
-            if "offline_access" in self.context.client_metadata.scope.split():
-                auth_params["prompt"] = "consent"
-
-        authorization_url = f"{auth_endpoint}?{urlencode(auth_params)}"
-        await self.context.redirect_handler(authorization_url)
-
-        # Wait for callback
-        auth_code, returned_state = await self.context.callback_handler()
-
-        if returned_state is None or not secrets.compare_digest(returned_state, state):
-            raise OAuthFlowError(f"State parameter mismatch: {returned_state} != {state}")  # pragma: no cover
-
-        if not auth_code:
-            raise OAuthFlowError("No authorization code received")  # pragma: no cover
-
-        # Return auth code and code verifier for token exchange
-        return auth_code, pkce_params.code_verifier
+        pass
 
     def _get_token_endpoint(self) -> str:
-        if self.context.oauth_metadata and self.context.oauth_metadata.token_endpoint:
-            token_url = str(self.context.oauth_metadata.token_endpoint)
-        else:
-            auth_base_url = self.context.get_authorization_base_url(self.context.server_url)
-            token_url = urljoin(auth_base_url, "/token")
-        return token_url
+        pass
 
     async def _exchange_token_authorization_code(
         self, auth_code: str, code_verifier: str, *, token_data: dict[str, Any] | None = {}
     ) -> httpx.Request:
         """Build token exchange request for authorization_code flow."""
-        if self.context.client_metadata.redirect_uris is None:
-            raise OAuthFlowError("No redirect URIs provided for authorization code grant")  # pragma: no cover
-        if not self.context.client_info:
-            raise OAuthFlowError("Missing client info")  # pragma: no cover
-
-        token_url = self._get_token_endpoint()
-        token_data = token_data or {}
-        token_data.update(
-            {
-                "grant_type": "authorization_code",
-                "code": auth_code,
-                "redirect_uri": str(self.context.client_metadata.redirect_uris[0]),
-                "client_id": self.context.client_info.client_id,
-                "code_verifier": code_verifier,
-            }
-        )
-
-        # Only include resource param if conditions are met
-        if self.context.should_include_resource_param(self.context.protocol_version):
-            token_data["resource"] = self.context.get_resource_url()  # RFC 8707
-
-        # Prepare authentication based on preferred method
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        token_data, headers = self.context.prepare_token_auth(token_data, headers)
-
-        return httpx.Request("POST", token_url, data=token_data, headers=headers)
+        pass
 
     async def _handle_token_response(self, response: httpx.Response) -> None:
         """Handle token exchange response."""
-        if response.status_code not in {200, 201}:
-            body = await response.aread()  # pragma: no cover
-            body_text = body.decode("utf-8")  # pragma: no cover
-            raise OAuthTokenError(f"Token exchange failed ({response.status_code}): {body_text}")  # pragma: no cover
-
-        # Parse and validate response with scope validation
-        token_response = await handle_token_response_scopes(response)
-
-        # Store tokens in context
-        self.context.current_tokens = token_response
-        self.context.update_token_expiry(token_response)
-        await self.context.storage.set_tokens(token_response)
+        pass
 
     async def _refresh_token(self) -> httpx.Request:
         """Build token refresh request."""
-        if not self.context.current_tokens or not self.context.current_tokens.refresh_token:
-            raise OAuthTokenError("No refresh token available")  # pragma: no cover
-
-        if not self.context.client_info or not self.context.client_info.client_id:
-            raise OAuthTokenError("No client info available")  # pragma: no cover
-
-        if self.context.oauth_metadata and self.context.oauth_metadata.token_endpoint:
-            token_url = str(self.context.oauth_metadata.token_endpoint)
-        else:
-            auth_base_url = self.context.get_authorization_base_url(self.context.server_url)
-            token_url = urljoin(auth_base_url, "/token")
-
-        refresh_data: dict[str, str] = {
-            "grant_type": "refresh_token",
-            "refresh_token": self.context.current_tokens.refresh_token,
-            "client_id": self.context.client_info.client_id,
-        }
-
-        # Only include resource param if conditions are met
-        if self.context.should_include_resource_param(self.context.protocol_version):
-            refresh_data["resource"] = self.context.get_resource_url()  # RFC 8707
-
-        # Prepare authentication based on preferred method
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        refresh_data, headers = self.context.prepare_token_auth(refresh_data, headers)
-
-        return httpx.Request("POST", token_url, data=refresh_data, headers=headers)
+        pass
 
     async def _handle_refresh_response(self, response: httpx.Response) -> bool:  # pragma: no cover
         """Handle token refresh response. Returns True if successful."""
-        if response.status_code != 200:
-            logger.warning(f"Token refresh failed: {response.status_code}")
-            self.context.clear_tokens()
-            return False
-
-        try:
-            content = await response.aread()
-            token_response = OAuthToken.model_validate_json(content)
-
-            self.context.current_tokens = token_response
-            self.context.update_token_expiry(token_response)
-            await self.context.storage.set_tokens(token_response)
-
-            return True
-        except ValidationError:
-            logger.exception("Invalid refresh response")
-            self.context.clear_tokens()
-            return False
+        pass
 
     async def _initialize(self) -> None:  # pragma: no cover
         """Load stored tokens and client info."""
-        self.context.current_tokens = await self.context.storage.get_tokens()
-        self.context.client_info = await self.context.storage.get_client_info()
-        self._initialized = True
+        pass
 
     def _add_auth_header(self, request: httpx.Request) -> None:
         """Add authorization header to request if we have valid tokens."""
-        if self.context.current_tokens and self.context.current_tokens.access_token:  # pragma: no branch
-            request.headers["Authorization"] = f"Bearer {self.context.current_tokens.access_token}"
+        pass
 
     async def _handle_oauth_metadata_response(self, response: httpx.Response) -> None:
-        content = await response.aread()
-        metadata = OAuthMetadata.model_validate_json(content)
-        self.context.oauth_metadata = metadata
+        pass
 
     async def _validate_resource_match(self, prm: ProtectedResourceMetadata) -> None:
         """Validate that PRM resource matches the server URL per RFC 8707."""
-        prm_resource = str(prm.resource) if prm.resource else None
-
-        if self._validate_resource_url_callback is not None:
-            await self._validate_resource_url_callback(self.context.server_url, prm_resource)
-            return
-
-        if not prm_resource:
-            return  # pragma: no cover
-        default_resource = resource_url_from_server_url(self.context.server_url)
-        if not check_resource_allowed(requested_resource=default_resource, configured_resource=prm_resource):
-            raise OAuthFlowError(f"Protected resource {prm_resource} does not match expected {default_resource}")
+        pass
 
     async def async_auth_flow(self, request: httpx.Request) -> AsyncGenerator[httpx.Request, httpx.Response]:
         """HTTPX auth flow integration."""
-        async with self.context.lock:
-            if not self._initialized:
-                await self._initialize()  # pragma: no cover
-
-            # Capture protocol version from request headers
-            self.context.protocol_version = request.headers.get(MCP_PROTOCOL_VERSION)
-
-            if not self.context.is_token_valid() and self.context.can_refresh_token():
-                # Try to refresh token
-                refresh_request = await self._refresh_token()  # pragma: no cover
-                refresh_response = yield refresh_request  # pragma: no cover
-
-                if not await self._handle_refresh_response(refresh_response):  # pragma: no cover
-                    # Refresh failed, need full re-authentication
-                    self._initialized = False
-
-            if self.context.is_token_valid():
-                self._add_auth_header(request)
-
-            response = yield request
-
-            if response.status_code == 401:
-                # Perform full OAuth flow
-                try:
-                    # OAuth flow must be inline due to generator constraints
-                    www_auth_resource_metadata_url = extract_resource_metadata_from_www_auth(response)
-
-                    # Step 1: Discover protected resource metadata (SEP-985 with fallback support)
-                    prm_discovery_urls = build_protected_resource_metadata_discovery_urls(
-                        www_auth_resource_metadata_url, self.context.server_url
-                    )
-
-                    for url in prm_discovery_urls:  # pragma: no branch
-                        discovery_request = create_oauth_metadata_request(url)
-
-                        discovery_response = yield discovery_request  # sending request
-
-                        prm = await handle_protected_resource_response(discovery_response)
-                        if prm:
-                            # Validate PRM resource matches server URL (RFC 8707)
-                            await self._validate_resource_match(prm)
-                            self.context.protected_resource_metadata = prm
-
-                            # todo: try all authorization_servers to find the OASM
-                            assert (
-                                len(prm.authorization_servers) > 0
-                            )  # this is always true as authorization_servers has a min length of 1
-
-                            self.context.auth_server_url = str(prm.authorization_servers[0])
-                            break
-                        else:
-                            logger.debug(f"Protected resource metadata discovery failed: {url}")
-
-                    asm_discovery_urls = build_oauth_authorization_server_metadata_discovery_urls(
-                        self.context.auth_server_url, self.context.server_url
-                    )
-
-                    # Step 2: Discover OAuth Authorization Server Metadata (OASM) (with fallback for legacy servers)
-                    for url in asm_discovery_urls:  # pragma: no branch
-                        oauth_metadata_request = create_oauth_metadata_request(url)
-                        oauth_metadata_response = yield oauth_metadata_request
-
-                        ok, asm = await handle_auth_metadata_response(oauth_metadata_response)
-                        if not ok:
-                            break
-                        if ok and asm:
-                            self.context.oauth_metadata = asm
-                            break
-                        else:
-                            logger.debug(f"OAuth metadata discovery failed: {url}")
-
-                    # Step 3: Apply scope selection strategy
-                    self.context.client_metadata.scope = get_client_metadata_scopes(
-                        extract_scope_from_www_auth(response),
-                        self.context.protected_resource_metadata,
-                        self.context.oauth_metadata,
-                        self.context.client_metadata.grant_types,
-                    )
-
-                    # Step 4: Register client or use URL-based client ID (CIMD)
-                    if not self.context.client_info:
-                        if should_use_client_metadata_url(
-                            self.context.oauth_metadata, self.context.client_metadata_url
-                        ):
-                            # Use URL-based client ID (CIMD)
-                            logger.debug(f"Using URL-based client ID (CIMD): {self.context.client_metadata_url}")
-                            client_information = create_client_info_from_metadata_url(
-                                self.context.client_metadata_url,  # type: ignore[arg-type]
-                                redirect_uris=self.context.client_metadata.redirect_uris,
-                            )
-                            self.context.client_info = client_information
-                            await self.context.storage.set_client_info(client_information)
-                        else:
-                            # Fallback to Dynamic Client Registration
-                            registration_request = create_client_registration_request(
-                                self.context.oauth_metadata,
-                                self.context.client_metadata,
-                                self.context.get_authorization_base_url(self.context.server_url),
-                            )
-                            registration_response = yield registration_request
-                            client_information = await handle_registration_response(registration_response)
-                            self.context.client_info = client_information
-                            await self.context.storage.set_client_info(client_information)
-
-                    # Step 5: Perform authorization and complete token exchange
-                    token_response = yield await self._perform_authorization()
-                    await self._handle_token_response(token_response)
-                except Exception:  # pragma: no cover
-                    logger.exception("OAuth flow error")
-                    raise
-
-                # Retry with new tokens
-                self._add_auth_header(request)
-                yield request
-            elif response.status_code == 403:
-                # Step 1: Extract error field from WWW-Authenticate header
-                error = extract_field_from_www_auth(response, "error")
-
-                # Step 2: Check if we need to step-up authorization
-                if error == "insufficient_scope":  # pragma: no branch
-                    try:
-                        # Step 2a: Update the required scopes
-                        self.context.client_metadata.scope = get_client_metadata_scopes(
-                            extract_scope_from_www_auth(response),
-                            self.context.protected_resource_metadata,
-                            self.context.oauth_metadata,
-                            self.context.client_metadata.grant_types,
-                        )
-
-                        # Step 2b: Perform (re-)authorization and token exchange
-                        token_response = yield await self._perform_authorization()
-                        await self._handle_token_response(token_response)
-                    except Exception:  # pragma: no cover
-                        logger.exception("OAuth flow error")
-                        raise
-
-                # Retry with new tokens
-                self._add_auth_header(request)
-                yield request
+        pass

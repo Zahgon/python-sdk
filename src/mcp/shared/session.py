@@ -128,16 +128,7 @@ class RequestResponder(Generic[ReceiveRequestT, SendResultT]):
             RuntimeError: If not used within a context manager
             AssertionError: If request was already responded to
         """
-        if not self._entered:  # pragma: no cover
-            raise RuntimeError("RequestResponder must be used as a context manager")
-        assert not self._completed, "Request already responded to"
-
-        if not self.cancelled:  # pragma: no branch
-            self._completed = True
-
-            await self._session._send_response(  # type: ignore[reportPrivateUsage]
-                request_id=self.request_id, response=response
-            )
+        pass
 
     async def cancel(self) -> None:
         """Cancel this request and mark it as completed."""
@@ -156,11 +147,11 @@ class RequestResponder(Generic[ReceiveRequestT, SendResultT]):
 
     @property
     def in_flight(self) -> bool:  # pragma: no cover
-        return not self._completed and not self.cancelled
+        pass
 
     @property
     def cancelled(self) -> bool:
-        return self._cancel_scope.cancel_called
+        pass
 
 
 class BaseSession(
@@ -349,112 +340,7 @@ class BaseSession(
         raise NotImplementedError
 
     async def _receive_loop(self) -> None:
-        async with self._read_stream, self._write_stream:
-            try:
-
-                async def _handle_session_message(message: SessionMessage) -> None:
-                    sender_context: contextvars.Context | None = getattr(self._read_stream, "last_context", None)
-                    if isinstance(message.message, JSONRPCRequest):
-                        try:
-                            validated_request = self._receive_request_adapter.validate_python(
-                                message.message.model_dump(by_alias=True, mode="json", exclude_none=True),
-                                by_name=False,
-                            )
-                            responder = RequestResponder(
-                                request_id=message.message.id,
-                                request_meta=validated_request.params.meta if validated_request.params else None,
-                                request=validated_request,
-                                session=self,
-                                on_complete=lambda r: self._in_flight.pop(r.request_id, None),
-                                message_metadata=message.metadata,
-                                context=sender_context,
-                            )
-                            self._in_flight[responder.request_id] = responder
-                            await self._received_request(responder)
-
-                            if not responder._completed:  # type: ignore[reportPrivateUsage]
-                                await self._handle_incoming(responder)
-                        except Exception:
-                            # For request validation errors, send a proper JSON-RPC error
-                            # response instead of crashing the server
-                            logging.warning("Failed to validate request", exc_info=True)
-                            logging.debug(f"Message that failed validation: {message.message}")
-                            error_response = JSONRPCError(
-                                jsonrpc="2.0",
-                                id=message.message.id,
-                                error=ErrorData(code=INVALID_PARAMS, message="Invalid request parameters", data=""),
-                            )
-                            session_message = SessionMessage(message=error_response)
-                            await self._write_stream.send(session_message)
-
-                    elif isinstance(message.message, JSONRPCNotification):
-                        try:
-                            notification = self._receive_notification_adapter.validate_python(
-                                message.message.model_dump(by_alias=True, mode="json", exclude_none=True),
-                                by_name=False,
-                            )
-                            # Handle cancellation notifications
-                            if isinstance(notification, CancelledNotification):
-                                cancelled_id = notification.params.request_id
-                                if cancelled_id in self._in_flight:  # pragma: no branch
-                                    await self._in_flight[cancelled_id].cancel()
-                            else:
-                                # Handle progress notifications callback
-                                if isinstance(notification, ProgressNotification):
-                                    progress_token = notification.params.progress_token
-                                    # If there is a progress callback for this token,
-                                    # call it with the progress information
-                                    if progress_token in self._progress_callbacks:
-                                        callback = self._progress_callbacks[progress_token]
-                                        try:
-                                            await callback(
-                                                notification.params.progress,
-                                                notification.params.total,
-                                                notification.params.message,
-                                            )
-                                        except Exception:
-                                            logging.exception("Progress callback raised an exception")
-                                await self._received_notification(notification)
-                                await self._handle_incoming(notification)
-                        except Exception:
-                            # For other validation errors, log and continue
-                            logging.warning(  # pragma: no cover
-                                f"Failed to validate notification:. Message was: {message.message}",
-                                exc_info=True,
-                            )
-                    else:  # Response or error
-                        await self._handle_response(message)
-
-                async for message in self._read_stream:
-                    if isinstance(message, Exception):
-                        await self._handle_incoming(message)
-                        continue
-
-                    await _handle_session_message(message)
-
-            except anyio.ClosedResourceError:
-                # This is expected when the client disconnects abruptly.
-                # Without this handler, the exception would propagate up and
-                # crash the server's task group.
-                logging.debug("Read stream closed by client")
-            except Exception as e:
-                # Other exceptions are not expected and should be logged. We purposefully
-                # catch all exceptions here to avoid crashing the server.
-                logging.exception(f"Unhandled exception in receive loop: {e}")  # pragma: no cover
-            finally:
-                # after the read stream is closed, we need to send errors
-                # to any pending requests
-                # Snapshot: stream.send() wakes the waiter, whose finally pops
-                # from _response_streams before the next __next__() call.
-                for id, stream in list(self._response_streams.items()):
-                    error = ErrorData(code=CONNECTION_CLOSED, message="Connection closed")
-                    try:
-                        await stream.send(JSONRPCError(jsonrpc="2.0", id=id, error=error))
-                        await stream.aclose()
-                    except Exception:  # pragma: no cover
-                        # Stream might already be closed
-                        pass
-                self._response_streams.clear()
+        pass
 
     def _normalize_request_id(self, response_id: RequestId) -> RequestId:
         """Normalize a response ID to match how request IDs are stored.
@@ -469,12 +355,7 @@ class BaseSession(
         Returns:
             The normalized ID (int if possible, otherwise original value).
         """
-        if isinstance(response_id, str):
-            try:
-                return int(response_id)
-            except ValueError:
-                logging.warning(f"Response ID {response_id!r} cannot be normalized to match pending requests")
-        return response_id
+        pass
 
     async def _handle_response(self, message: SessionMessage) -> None:
         """Handle an incoming response or error message.
@@ -482,41 +363,7 @@ class BaseSession(
         Checks response routers first (e.g., for task-related responses),
         then falls back to the normal response stream mechanism.
         """
-        # This check is always true at runtime: the caller (_receive_loop) only invokes
-        # this method in the else branch after checking for JSONRPCRequest and
-        # JSONRPCNotification. However, the type checker can't infer this from the
-        # method signature, so we need this guard for type narrowing.
-        if not isinstance(message.message, JSONRPCResponse | JSONRPCError):
-            return  # pragma: no cover
-
-        if message.message.id is None:
-            # Narrows to JSONRPCError since JSONRPCResponse.id is always RequestId
-            error = message.message.error
-            logging.warning(f"Received error with null ID: {error.message}")
-            await self._handle_incoming(MCPError(error.code, error.message, error.data))
-            return
-        # Normalize response ID to handle type mismatches (e.g., "0" vs 0)
-        response_id = self._normalize_request_id(message.message.id)
-
-        # First, check response routers (e.g., TaskResultHandler)
-        if isinstance(message.message, JSONRPCError):
-            # Route error to routers
-            for router in self._response_routers:
-                if router.route_error(response_id, message.message.error):
-                    return  # Handled
-        else:
-            # Route success response to routers
-            response_data: dict[str, Any] = message.message.result or {}
-            for router in self._response_routers:
-                if router.route_response(response_id, response_data):
-                    return  # Handled
-
-        # Fall back to normal response streams
-        stream = self._response_streams.pop(response_id, None)
-        if stream:
-            await stream.send(message.message)
-        else:
-            await self._handle_incoming(RuntimeError(f"Received response with an unknown request ID: {message}"))
+        pass
 
     async def _received_request(self, responder: RequestResponder[ReceiveRequestT, SendResultT]) -> None:
         """Can be overridden by subclasses to handle a request without needing to

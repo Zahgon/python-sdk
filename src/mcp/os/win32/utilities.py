@@ -43,23 +43,7 @@ def get_windows_executable_command(command: str) -> str:
     Returns:
         str: Windows-appropriate command path
     """
-    try:
-        # First check if command exists in PATH as-is
-        if command_path := shutil.which(command):
-            return command_path
-
-        # Check for Windows-specific extensions
-        for ext in [".cmd", ".bat", ".exe", ".ps1"]:
-            ext_version = f"{command}{ext}"
-            if ext_path := shutil.which(ext_version):
-                return ext_path
-
-        # For regular commands or if we couldn't find special versions
-        return command
-    except OSError:
-        # Handle file system errors during path resolution
-        # (permissions, broken symlinks, etc.)
-        return command
+    pass
 
 
 class FallbackProcess:
@@ -112,21 +96,21 @@ class FallbackProcess:
 
     def terminate(self):
         """Terminate the subprocess immediately."""
-        return self.popen.terminate()
+        pass
 
     def kill(self) -> None:
         """Kill the subprocess immediately (alias for terminate)."""
-        self.terminate()
+        pass
 
     @property
     def pid(self) -> int:
         """Return the process ID."""
-        return self.popen.pid
+        pass
 
     @property
     def returncode(self) -> int | None:
         """Return the exit code, or ``None`` if the process has not yet terminated."""
-        return self.popen.returncode
+        pass
 
 
 # ------------------------
@@ -161,35 +145,7 @@ async def create_windows_process(
     Returns:
         Process | FallbackProcess: Async-compatible subprocess with stdin and stdout streams
     """
-    job = _create_job_object()
-    process = None
-
-    try:
-        # First try using anyio with Windows-specific flags to hide console window
-        process = await anyio.open_process(
-            [command, *args],
-            env=env,
-            # Ensure we don't create console windows for each process
-            creationflags=subprocess.CREATE_NO_WINDOW  # type: ignore
-            if hasattr(subprocess, "CREATE_NO_WINDOW")
-            else 0,
-            stderr=errlog,
-            cwd=cwd,
-        )
-    except NotImplementedError:
-        # If Windows doesn't support async subprocess creation, use fallback
-        process = await _create_windows_fallback_process(command, args, env, errlog, cwd)
-    except Exception:
-        # Try again without creation flags
-        process = await anyio.open_process(
-            [command, *args],
-            env=env,
-            stderr=errlog,
-            cwd=cwd,
-        )
-
-    _maybe_assign_process_to_job(process, job)
-    return process
+    pass
 
 
 async def _create_windows_fallback_process(
@@ -203,47 +159,12 @@ async def _create_windows_fallback_process(
 
     This function wraps the sync subprocess.Popen in an async-compatible interface.
     """
-    try:
-        # Try launching with creationflags to avoid opening a new console window
-        popen_obj = subprocess.Popen(
-            [command, *args],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=errlog,
-            env=env,
-            cwd=cwd,
-            bufsize=0,  # Unbuffered output
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-    except Exception:
-        # If creationflags failed, fallback without them
-        popen_obj = subprocess.Popen(
-            [command, *args],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=errlog,
-            env=env,
-            cwd=cwd,
-            bufsize=0,
-        )
-    return FallbackProcess(popen_obj)
+    pass
 
 
 def _create_job_object() -> int | None:
     """Create a Windows Job Object configured to terminate all processes when closed."""
-    if sys.platform != "win32" or not win32job:
-        return None
-
-    try:
-        job = win32job.CreateJobObject(None, "")
-        extended_info = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
-
-        extended_info["BasicLimitInformation"]["LimitFlags"] |= win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-        win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, extended_info)
-        return job
-    except Exception as e:
-        logger.warning(f"Failed to create Job Object for process tree management: {e}")
-        return None
+    pass
 
 
 def _maybe_assign_process_to_job(process: Process | FallbackProcess, job: JobHandle | None) -> None:
@@ -251,28 +172,7 @@ def _maybe_assign_process_to_job(process: Process | FallbackProcess, job: JobHan
 
     If assignment fails for any reason, the job handle is closed.
     """
-    if not job:
-        return
-
-    if sys.platform != "win32" or not win32api or not win32con or not win32job:
-        return
-
-    try:
-        process_handle = win32api.OpenProcess(
-            win32con.PROCESS_SET_QUOTA | win32con.PROCESS_TERMINATE, False, process.pid
-        )
-        if not process_handle:
-            raise Exception("Failed to open process handle")
-
-        try:
-            win32job.AssignProcessToJobObject(job, process_handle)
-            process._job_object = job
-        finally:
-            win32api.CloseHandle(process_handle)
-    except Exception as e:
-        logger.warning(f"Failed to assign process {process.pid} to Job Object: {e}")
-        if win32api:
-            win32api.CloseHandle(job)
+    pass
 
 
 async def terminate_windows_process_tree(process: Process | FallbackProcess, timeout_seconds: float = 2.0) -> None:
@@ -285,28 +185,7 @@ async def terminate_windows_process_tree(process: Process | FallbackProcess, tim
         process: The process to terminate
         timeout_seconds: Timeout in seconds before force killing (default: 2.0)
     """
-    if sys.platform != "win32":
-        return
-
-    job = getattr(process, "_job_object", None)
-    if job and win32job:
-        try:
-            win32job.TerminateJobObject(job, 1)
-        except Exception:
-            # Job might already be terminated
-            pass
-        finally:
-            if win32api:
-                try:
-                    win32api.CloseHandle(job)
-                except Exception:
-                    pass
-
-    # Always try to terminate the process itself as well
-    try:
-        process.terminate()
-    except Exception:
-        pass
+    pass
 
 
 @deprecated(
@@ -324,10 +203,4 @@ async def terminate_windows_process(process: Process | FallbackProcess):
     Args:
         process: The process to terminate
     """
-    try:
-        process.terminate()
-        with anyio.fail_after(2.0):
-            await process.wait()
-    except TimeoutError:
-        # Force kill if it doesn't terminate
-        process.kill()
+    pass

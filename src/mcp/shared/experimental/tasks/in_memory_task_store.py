@@ -56,15 +56,11 @@ class InMemoryTaskStore(TaskStore):
 
     def _is_expired(self, stored: StoredTask) -> bool:
         """Check if a task has expired."""
-        if stored.expires_at is None:
-            return False
-        return datetime.now(timezone.utc) >= stored.expires_at
+        pass
 
     def _cleanup_expired(self) -> None:
         """Remove all expired tasks. Called lazily during access operations."""
-        expired_ids = [task_id for task_id, stored in self._tasks.items() if self._is_expired(stored)]
-        for task_id in expired_ids:
-            del self._tasks[task_id]
+        pass
 
     async def create_task(
         self,
@@ -72,34 +68,11 @@ class InMemoryTaskStore(TaskStore):
         task_id: str | None = None,
     ) -> Task:
         """Create a new task with the given metadata."""
-        # Cleanup expired tasks on access
-        self._cleanup_expired()
-
-        task = create_task_state(metadata, task_id)
-
-        if task.task_id in self._tasks:
-            raise ValueError(f"Task with ID {task.task_id} already exists")
-
-        stored = StoredTask(
-            task=task,
-            expires_at=self._calculate_expiry(metadata.ttl),
-        )
-        self._tasks[task.task_id] = stored
-
-        # Return a copy to prevent external modification
-        return Task(**task.model_dump())
+        pass
 
     async def get_task(self, task_id: str) -> Task | None:
         """Get a task by ID."""
-        # Cleanup expired tasks on access
-        self._cleanup_expired()
-
-        stored = self._tasks.get(task_id)
-        if stored is None:
-            return None
-
-        # Return a copy to prevent external modification
-        return Task(**stored.task.model_dump())
+        pass
 
     async def update_task(
         self,
@@ -139,65 +112,26 @@ class InMemoryTaskStore(TaskStore):
 
     async def store_result(self, task_id: str, result: Result) -> None:
         """Store the result for a task."""
-        stored = self._tasks.get(task_id)
-        if stored is None:
-            raise ValueError(f"Task with ID {task_id} not found")
-
-        stored.result = result
+        pass
 
     async def get_result(self, task_id: str) -> Result | None:
         """Get the stored result for a task."""
-        stored = self._tasks.get(task_id)
-        if stored is None:
-            return None
-
-        return stored.result
+        pass
 
     async def list_tasks(
         self,
         cursor: str | None = None,
     ) -> tuple[list[Task], str | None]:
         """List tasks with pagination."""
-        # Cleanup expired tasks on access
-        self._cleanup_expired()
-
-        all_task_ids = list(self._tasks.keys())
-
-        start_index = 0
-        if cursor is not None:
-            try:
-                cursor_index = all_task_ids.index(cursor)
-                start_index = cursor_index + 1
-            except ValueError:
-                raise ValueError(f"Invalid cursor: {cursor}")
-
-        page_task_ids = all_task_ids[start_index : start_index + self._page_size]
-        tasks = [Task(**self._tasks[tid].task.model_dump()) for tid in page_task_ids]
-
-        # Determine next cursor
-        next_cursor = None
-        if start_index + self._page_size < len(all_task_ids) and page_task_ids:
-            next_cursor = page_task_ids[-1]
-
-        return tasks, next_cursor
+        pass
 
     async def delete_task(self, task_id: str) -> bool:
         """Delete a task."""
-        if task_id not in self._tasks:
-            return False
-
-        del self._tasks[task_id]
-        return True
+        pass
 
     async def wait_for_update(self, task_id: str) -> None:
         """Wait until the task status changes."""
-        if task_id not in self._tasks:
-            raise ValueError(f"Task with ID {task_id} not found")
-
-        # Create a fresh event for waiting (anyio.Event can't be cleared)
-        self._update_events[task_id] = anyio.Event()
-        event = self._update_events[task_id]
-        await event.wait()
+        pass
 
     async def notify_update(self, task_id: str) -> None:
         """Signal that a task has been updated."""
@@ -208,10 +142,8 @@ class InMemoryTaskStore(TaskStore):
 
     def cleanup(self) -> None:
         """Cleanup all tasks (useful for testing or graceful shutdown)."""
-        self._tasks.clear()
-        self._update_events.clear()
+        pass
 
     def get_all_tasks(self) -> list[Task]:
         """Get all tasks (useful for debugging). Returns copies to prevent modification."""
-        self._cleanup_expired()
-        return [Task(**stored.task.model_dump()) for stored in self._tasks.values()]
+        pass

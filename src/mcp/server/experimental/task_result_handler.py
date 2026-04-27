@@ -73,7 +73,7 @@ class TaskResultHandler:
 
         This is a helper for delivering queued task messages.
         """
-        await session.send_message(message)
+        pass
 
     async def handle(
         self,
@@ -98,32 +98,7 @@ class TaskResultHandler:
         Returns:
             GetTaskPayloadResult with the task's final payload
         """
-        task_id = request.params.task_id
-
-        while True:
-            task = await self._store.get_task(task_id)
-            if task is None:
-                raise MCPError(code=INVALID_PARAMS, message=f"Task not found: {task_id}")
-
-            await self._deliver_queued_messages(task_id, session, request_id)
-
-            # If task is terminal, return result
-            if is_terminal(task.status):
-                result = await self._store.get_result(task_id)
-                # GetTaskPayloadResult is a Result with extra="allow"
-                # The stored result contains the actual payload data
-                # Per spec: tasks/result MUST include _meta with related-task metadata
-                related_task = RelatedTaskMetadata(task_id=task_id)
-                related_task_meta: dict[str, Any] = {RELATED_TASK_METADATA_KEY: related_task.model_dump(by_alias=True)}
-                if result is not None:
-                    result_data = result.model_dump(by_alias=True)
-                    existing_meta: dict[str, Any] = result_data.get("_meta") or {}
-                    result_data["_meta"] = {**existing_meta, **related_task_meta}
-                    return GetTaskPayloadResult.model_validate(result_data)
-                return GetTaskPayloadResult.model_validate({"_meta": related_task_meta})
-
-            # Wait for task update (status change or new messages)
-            await self._wait_for_task_update(task_id)
+        pass
 
     async def _deliver_queued_messages(
         self,
@@ -136,52 +111,14 @@ class TaskResultHandler:
         Each message is sent via the session's write stream with
         relatedRequestId set so responses route back to this stream.
         """
-        while True:
-            message = await self._queue.dequeue(task_id)
-            if message is None:
-                break
-
-            # If this is a request (not notification), wait for response
-            if message.type == "request" and message.resolver is not None:
-                # Store the resolver so we can route the response back
-                original_id = message.original_request_id
-                if original_id is not None:
-                    self._pending_requests[original_id] = message.resolver
-
-            logger.debug("Delivering queued message for task %s: %s", task_id, message.type)
-
-            # Send the message with relatedRequestId for routing
-            session_message = SessionMessage(
-                message=message.message,
-                metadata=ServerMessageMetadata(related_request_id=request_id),
-            )
-            await self.send_message(session, session_message)
+        pass
 
     async def _wait_for_task_update(self, task_id: str) -> None:
         """Wait for task to be updated (status change or new message).
 
         Races between store update and queue message - first one wins.
         """
-        async with anyio.create_task_group() as tg:
-
-            async def wait_for_store() -> None:
-                try:
-                    await self._store.wait_for_update(task_id)
-                except Exception:
-                    pass
-                finally:
-                    tg.cancel_scope.cancel()
-
-            async def wait_for_queue() -> None:
-                try:
-                    await self._queue.wait_for_message(task_id)
-                except Exception:
-                    pass
-                finally:
-                    tg.cancel_scope.cancel()
-
-            tg.start_soon(wait_for_store)
-            tg.start_soon(wait_for_queue)
+        pass
 
     def route_response(self, request_id: RequestId, response: dict[str, Any]) -> bool:
         """Route a response back to the waiting resolver.
@@ -195,11 +132,7 @@ class TaskResultHandler:
         Returns:
             True if response was routed, False if no pending request
         """
-        resolver = self._pending_requests.pop(request_id, None)
-        if resolver is not None and not resolver.done():
-            resolver.set_result(response)
-            return True
-        return False
+        pass
 
     def route_error(self, request_id: RequestId, error: ErrorData) -> bool:
         """Route an error back to the waiting resolver.
@@ -211,8 +144,4 @@ class TaskResultHandler:
         Returns:
             True if error was routed, False if no pending request
         """
-        resolver = self._pending_requests.pop(request_id, None)
-        if resolver is not None and not resolver.done():
-            resolver.set_exception(MCPError.from_error_data(error))
-            return True
-        return False
+        pass

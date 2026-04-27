@@ -77,21 +77,12 @@ async def cancel_task(
             return await cancel_task(store, params.task_id)
         ```
     """
-    task = await store.get_task(task_id)
-    if task is None:
-        raise MCPError(code=INVALID_PARAMS, message=f"Task not found: {task_id}")
-
-    if is_terminal(task.status):
-        raise MCPError(code=INVALID_PARAMS, message=f"Cannot cancel task in terminal state '{task.status}'")
-
-    # Update task to cancelled status
-    cancelled_task = await store.update_task(task_id, status=TASK_STATUS_CANCELLED)
-    return CancelTaskResult(**cancelled_task.model_dump())
+    pass
 
 
 def generate_task_id() -> str:
     """Generate a unique task ID."""
-    return str(uuid4())
+    pass
 
 
 def create_task_state(
@@ -109,15 +100,7 @@ def create_task_state(
     Returns:
         A new Task in "working" status
     """
-    now = datetime.now(timezone.utc)
-    return Task(
-        task_id=task_id or generate_task_id(),
-        status=TASK_STATUS_WORKING,
-        created_at=now,
-        last_updated_at=now,
-        ttl=metadata.ttl,
-        poll_interval=500,  # Default 500ms poll interval
-    )
+    pass
 
 
 @asynccontextmanager
@@ -151,16 +134,5 @@ async def task_execution(
                 result = await do_work()
                 await ctx.complete(result)
     """
-    task = await store.get_task(task_id)
-    if task is None:
-        raise ValueError(f"Task {task_id} not found")
-
-    ctx = TaskContext(task, store)
-    try:
-        yield ctx
-    except Exception as e:
-        # Auto-fail the task if an exception occurs and task isn't already terminal
-        # Exception is suppressed since failure is captured in task state
-        if not is_terminal(ctx.task.status):
-            await ctx.fail(str(e))
+    pass
         # Don't re-raise - the failure is recorded in task state

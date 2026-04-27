@@ -18,14 +18,7 @@ def resource_url_from_server_url(url: str | HttpUrl | AnyUrl) -> str:
     Returns:
         Canonical resource URL string
     """
-    # Convert to string if needed
-    url_str = str(url)
-
-    # Parse the URL and remove fragment, create canonical form
-    parsed = urlsplit(url_str)
-    canonical = urlunsplit(parsed._replace(scheme=parsed.scheme.lower(), netloc=parsed.netloc.lower(), fragment=""))
-
-    return canonical
+    pass
 
 
 def check_resource_allowed(requested_resource: str, configured_resource: str) -> bool:
@@ -43,26 +36,7 @@ def check_resource_allowed(requested_resource: str, configured_resource: str) ->
     Returns:
         True if the requested resource matches the configured resource
     """
-    # Parse both URLs
-    requested = urlparse(requested_resource)
-    configured = urlparse(configured_resource)
-
-    # Compare scheme, host, and port (origin)
-    if requested.scheme.lower() != configured.scheme.lower() or requested.netloc.lower() != configured.netloc.lower():
-        return False
-
-    # Normalize trailing slashes before comparison so that
-    # "/foo" and "/foo/" are treated as equivalent.
-    requested_path = requested.path
-    configured_path = configured.path
-    if not requested_path.endswith("/"):
-        requested_path += "/"
-    if not configured_path.endswith("/"):
-        configured_path += "/"
-
-    # Check hierarchical match: requested must start with configured path.
-    # The trailing-slash normalization ensures "/api123/" won't match "/api/".
-    return requested_path.startswith(configured_path)
+    pass
 
 
 def calculate_token_expiry(expires_in: int | str | None) -> float | None:
@@ -74,7 +48,4 @@ def calculate_token_expiry(expires_in: int | str | None) -> float | None:
     Returns:
         Unix timestamp when token expires, or None if no expiry specified
     """
-    if expires_in is None:
-        return None  # pragma: no cover
-    # Defensive: handle servers that return expires_in as string
-    return time.time() + int(expires_in)
+    pass

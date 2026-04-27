@@ -52,20 +52,7 @@ def get_default_environment() -> dict[str, str]:
     """Returns a default environment object including only environment variables deemed
     safe to inherit.
     """
-    env: dict[str, str] = {}
-
-    for key in DEFAULT_INHERITED_ENV_VARS:
-        value = os.environ.get(key)
-        if value is None:  # pragma: lax no cover
-            continue
-
-        if value.startswith("()"):  # pragma: no cover
-            # Skip functions, which are a security risk
-            continue  # pragma: no cover
-
-        env[key] = value
-
-    return env
+    pass
 
 
 class StdioServerParameters(BaseModel):
@@ -106,109 +93,7 @@ async def stdio_client(server: StdioServerParameters, errlog: TextIO = sys.stder
     """Client transport for stdio: this will connect to a server by spawning a
     process and communicating with it over stdin/stdout.
     """
-    read_stream: MemoryObjectReceiveStream[SessionMessage | Exception]
-    read_stream_writer: MemoryObjectSendStream[SessionMessage | Exception]
-
-    write_stream: MemoryObjectSendStream[SessionMessage]
-    write_stream_reader: MemoryObjectReceiveStream[SessionMessage]
-
-    read_stream_writer, read_stream = anyio.create_memory_object_stream(0)
-    write_stream, write_stream_reader = anyio.create_memory_object_stream(0)
-
-    try:
-        command = _get_executable_command(server.command)
-
-        # Open process with stderr piped for capture
-        process = await _create_platform_compatible_process(
-            command=command,
-            args=server.args,
-            env=({**get_default_environment(), **server.env} if server.env is not None else get_default_environment()),
-            errlog=errlog,
-            cwd=server.cwd,
-        )
-    except OSError:
-        # Clean up streams if process creation fails
-        await read_stream.aclose()
-        await write_stream.aclose()
-        await read_stream_writer.aclose()
-        await write_stream_reader.aclose()
-        raise
-
-    async def stdout_reader():
-        assert process.stdout, "Opened process is missing stdout"
-
-        try:
-            async with read_stream_writer:
-                buffer = ""
-                async for chunk in TextReceiveStream(
-                    process.stdout,
-                    encoding=server.encoding,
-                    errors=server.encoding_error_handler,
-                ):
-                    lines = (buffer + chunk).split("\n")
-                    buffer = lines.pop()
-
-                    for line in lines:
-                        try:
-                            message = types.jsonrpc_message_adapter.validate_json(line, by_name=False)
-                        except Exception as exc:  # pragma: no cover
-                            logger.exception("Failed to parse JSONRPC message from server")
-                            await read_stream_writer.send(exc)
-                            continue
-
-                        session_message = SessionMessage(message)
-                        await read_stream_writer.send(session_message)
-        except anyio.ClosedResourceError:  # pragma: lax no cover
-            await anyio.lowlevel.checkpoint()
-
-    async def stdin_writer():
-        assert process.stdin, "Opened process is missing stdin"
-
-        try:
-            async with write_stream_reader:
-                async for session_message in write_stream_reader:
-                    json = session_message.message.model_dump_json(by_alias=True, exclude_unset=True)
-                    await process.stdin.send(
-                        (json + "\n").encode(
-                            encoding=server.encoding,
-                            errors=server.encoding_error_handler,
-                        )
-                    )
-        except anyio.ClosedResourceError:  # pragma: no cover
-            await anyio.lowlevel.checkpoint()
-
-    async with anyio.create_task_group() as tg, process:
-        tg.start_soon(stdout_reader)
-        tg.start_soon(stdin_writer)
-        try:
-            yield read_stream, write_stream
-        finally:
-            # MCP spec: stdio shutdown sequence
-            # 1. Close input stream to server
-            # 2. Wait for server to exit, or send SIGTERM if it doesn't exit in time
-            # 3. Send SIGKILL if still not exited
-            if process.stdin:  # pragma: no branch
-                try:
-                    await process.stdin.aclose()
-                except Exception:  # pragma: no cover
-                    # stdin might already be closed, which is fine
-                    pass
-
-            try:
-                # Give the process time to exit gracefully after stdin closes
-                with anyio.fail_after(PROCESS_TERMINATION_TIMEOUT):
-                    await process.wait()
-            except TimeoutError:
-                # Process didn't exit from stdin closure, use platform-specific termination
-                # which handles SIGTERM -> SIGKILL escalation
-                await _terminate_process_tree(process)
-            except ProcessLookupError:  # pragma: no cover
-                # Process already exited, which is fine
-                pass
-            await read_stream.aclose()
-            await write_stream.aclose()
-            await read_stream_writer.aclose()
-            await write_stream_reader.aclose()
+    pass
 
 
 def _get_executable_command(command: str) -> str:
@@ -220,10 +105,7 @@ def _get_executable_command(command: str) -> str:
     Returns:
         str: Platform-appropriate command
     """
-    if sys.platform == "win32":  # pragma: no cover
-        return get_windows_executable_command(command)
-    else:  # pragma: lax no cover
-        return command
+    pass
 
 
 async def _create_platform_compatible_process(
@@ -238,18 +120,7 @@ async def _create_platform_compatible_process(
     Unix: Creates process in a new session/process group for killpg support
     Windows: Creates process in a Job Object for reliable child termination
     """
-    if sys.platform == "win32":  # pragma: no cover
-        process = await create_windows_process(command, args, env, errlog, cwd)
-    else:  # pragma: lax no cover
-        process = await anyio.open_process(
-            [command, *args],
-            env=env,
-            stderr=errlog,
-            cwd=cwd,
-            start_new_session=True,
-        )
-
-    return process
+    pass
 
 
 async def _terminate_process_tree(process: Process | FallbackProcess, timeout_seconds: float = 2.0) -> None:
@@ -262,9 +133,4 @@ async def _terminate_process_tree(process: Process | FallbackProcess, timeout_se
         process: The process to terminate
         timeout_seconds: Timeout in seconds before force killing (default: 2.0)
     """
-    if sys.platform == "win32":  # pragma: no cover
-        await terminate_windows_process_tree(process, timeout_seconds)
-    else:  # pragma: lax no cover
-        # FallbackProcess should only be used for Windows compatibility
-        assert isinstance(process, Process)
-        await terminate_posix_process_tree(process, timeout_seconds)
+    pass

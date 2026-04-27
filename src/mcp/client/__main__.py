@@ -25,11 +25,7 @@ logger = logging.getLogger("client")
 async def message_handler(
     message: RequestResponder[types.ServerRequest, types.ClientResult] | types.ServerNotification | Exception,
 ) -> None:
-    if isinstance(message, Exception):
-        logger.error("Error: %s", message)
-        return
-
-    logger.info("Received message from server: %s", message)
+    pass
 
 
 async def run_session(
@@ -37,29 +33,11 @@ async def run_session(
     write_stream: WriteStream[SessionMessage],
     client_info: types.Implementation | None = None,
 ):
-    async with ClientSession(
-        read_stream,
-        write_stream,
-        message_handler=message_handler,
-        client_info=client_info,
-    ) as session:
-        logger.info("Initializing session")
-        await session.initialize()
-        logger.info("Initialized")
+    pass
 
 
 async def main(command_or_url: str, args: list[str], env: list[tuple[str, str]]):
-    env_dict = dict(env)
-
-    if urlparse(command_or_url).scheme in ("http", "https"):
-        # Use SSE client for HTTP(S) URLs
-        async with sse_client(command_or_url) as streams:
-            await run_session(*streams)
-    else:
-        # Use stdio client for commands
-        server_parameters = StdioServerParameters(command=command_or_url, args=args, env=env_dict)
-        async with stdio_client(server_parameters) as streams:
-            await run_session(*streams)
+    pass
 
 
 def cli():

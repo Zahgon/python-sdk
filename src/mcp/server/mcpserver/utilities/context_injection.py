@@ -63,6 +63,4 @@ def inject_context(
     Returns:
         Updated kwargs with context injected if applicable
     """
-    if context_kwarg is not None and context is not None:
-        return {**kwargs, context_kwarg: context}
-    return kwargs
+    pass

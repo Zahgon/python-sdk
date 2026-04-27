@@ -1022,7 +1022,7 @@ class SamplingMessage(MCPModel):
     def content_as_list(self) -> list[SamplingMessageContentBlock]:
         """Returns the content as a list of content blocks, regardless of whether
         it was originally a single block or a list."""
-        return self.content if isinstance(self.content, list) else [self.content]
+        pass
 
 
 class EmbeddedResource(MCPModel):
@@ -1411,7 +1411,7 @@ class CreateMessageResultWithTools(Result):
     def content_as_list(self) -> list[SamplingMessageContentBlock]:
         """Returns the content as a list of content blocks, regardless of whether
         it was originally a single block or a list."""
-        return self.content if isinstance(self.content, list) else [self.content]
+        pass
 
 
 class ResourceTemplateReference(MCPModel):

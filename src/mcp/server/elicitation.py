@@ -172,19 +172,4 @@ async def elicit_url(
     Returns:
         UrlElicitationResult indicating accept, decline, or cancel
     """
-    result = await session.elicit_url(
-        message=message,
-        url=url,
-        elicitation_id=elicitation_id,
-        related_request_id=related_request_id,
-    )
-
-    if result.action == "accept":
-        return AcceptedUrlElicitation()
-    elif result.action == "decline":
-        return DeclinedElicitation()
-    elif result.action == "cancel":
-        return CancelledElicitation()
-    else:  # pragma: no cover
-        # This should never happen, but handle it just in case
-        raise ValueError(f"Unexpected elicitation action: {result.action}")
+    pass

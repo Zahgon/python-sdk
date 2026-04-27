@@ -33,17 +33,11 @@ class Resolver(Generic[T]):
 
     def set_result(self, value: T) -> None:
         """Set the result value and wake up waiters."""
-        if self._event.is_set():
-            raise RuntimeError("Resolver already completed")
-        self._value = value
-        self._event.set()
+        pass
 
     def set_exception(self, exc: BaseException) -> None:
         """Set an exception and wake up waiters."""
-        if self._event.is_set():
-            raise RuntimeError("Resolver already completed")
-        self._exception = exc
-        self._event.set()
+        pass
 
     async def wait(self) -> T:
         """Wait for the result and return it, or raise the exception."""
@@ -55,4 +49,4 @@ class Resolver(Generic[T]):
 
     def done(self) -> bool:
         """Return True if the resolver has been completed."""
-        return self._event.is_set()
+        pass

@@ -16,8 +16,7 @@ def get_access_token() -> AccessToken | None:
     Returns:
         The access token if an authenticated user is available, None otherwise.
     """
-    auth_user = auth_context_var.get()
-    return auth_user.access_token if auth_user else None
+    pass
 
 
 class AuthContextMiddleware:

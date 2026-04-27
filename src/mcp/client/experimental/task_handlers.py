@@ -118,40 +118,28 @@ async def default_get_task_handler(
     context: RequestContext[ClientSession],
     params: types.GetTaskRequestParams,
 ) -> types.GetTaskResult | types.ErrorData:
-    return types.ErrorData(
-        code=types.METHOD_NOT_FOUND,
-        message="tasks/get not supported",
-    )
+    pass
 
 
 async def default_get_task_result_handler(
     context: RequestContext[ClientSession],
     params: types.GetTaskPayloadRequestParams,
 ) -> types.GetTaskPayloadResult | types.ErrorData:
-    return types.ErrorData(
-        code=types.METHOD_NOT_FOUND,
-        message="tasks/result not supported",
-    )
+    pass
 
 
 async def default_list_tasks_handler(
     context: RequestContext[ClientSession],
     params: types.PaginatedRequestParams | None,
 ) -> types.ListTasksResult | types.ErrorData:
-    return types.ErrorData(
-        code=types.METHOD_NOT_FOUND,
-        message="tasks/list not supported",
-    )
+    pass
 
 
 async def default_cancel_task_handler(
     context: RequestContext[ClientSession],
     params: types.CancelTaskRequestParams,
 ) -> types.CancelTaskResult | types.ErrorData:
-    return types.ErrorData(
-        code=types.METHOD_NOT_FOUND,
-        message="tasks/cancel not supported",
-    )
+    pass
 
 
 async def default_task_augmented_sampling(
@@ -159,10 +147,7 @@ async def default_task_augmented_sampling(
     params: types.CreateMessageRequestParams,
     task_metadata: types.TaskMetadata,
 ) -> types.CreateTaskResult | types.ErrorData:
-    return types.ErrorData(
-        code=types.INVALID_REQUEST,
-        message="Task-augmented sampling not supported",
-    )
+    pass
 
 
 async def default_task_augmented_elicitation(
@@ -170,10 +155,7 @@ async def default_task_augmented_elicitation(
     params: types.ElicitRequestParams,
     task_metadata: types.TaskMetadata,
 ) -> types.CreateTaskResult | types.ErrorData:
-    return types.ErrorData(
-        code=types.INVALID_REQUEST,
-        message="Task-augmented elicitation not supported",
-    )
+    pass
 
 
 @dataclass
@@ -215,40 +197,12 @@ class ExperimentalTaskHandlers:
         Returns:
             ClientTasksCapability if any handlers are provided, None otherwise
         """
-        has_list = self.list_tasks is not default_list_tasks_handler
-        has_cancel = self.cancel_task is not default_cancel_task_handler
-        has_sampling = self.augmented_sampling is not default_task_augmented_sampling
-        has_elicitation = self.augmented_elicitation is not default_task_augmented_elicitation
-
-        # If no handlers are provided, return None
-        if not any([has_list, has_cancel, has_sampling, has_elicitation]):
-            return None
-
-        # Build requests capability if any request handlers are provided
-        requests_capability: types.ClientTasksRequestsCapability | None = None
-        if has_sampling or has_elicitation:
-            requests_capability = types.ClientTasksRequestsCapability(
-                sampling=types.TasksSamplingCapability(create_message=types.TasksCreateMessageCapability())
-                if has_sampling
-                else None,
-                elicitation=types.TasksElicitationCapability(create=types.TasksCreateElicitationCapability())
-                if has_elicitation
-                else None,
-            )
-
-        return types.ClientTasksCapability(
-            list=types.TasksListCapability() if has_list else None,
-            cancel=types.TasksCancelCapability() if has_cancel else None,
-            requests=requests_capability,
-        )
+        pass
 
     @staticmethod
     def handles_request(request: types.ServerRequest) -> bool:
         """Check if this handler handles the given request type."""
-        return isinstance(
-            request,
-            types.GetTaskRequest | types.GetTaskPayloadRequest | types.ListTasksRequest | types.CancelTaskRequest,
-        )
+        pass
 
     async def handle_request(
         self,
@@ -259,33 +213,7 @@ class ExperimentalTaskHandlers:
 
         Call handles_request() first to check if this handler can handle the request.
         """
-        client_response_type: TypeAdapter[types.ClientResult | types.ErrorData] = TypeAdapter(
-            types.ClientResult | types.ErrorData
-        )
-
-        match responder.request:
-            case types.GetTaskRequest(params=params):
-                response = await self.get_task(ctx, params)
-                client_response = client_response_type.validate_python(response)
-                await responder.respond(client_response)
-
-            case types.GetTaskPayloadRequest(params=params):
-                response = await self.get_task_result(ctx, params)
-                client_response = client_response_type.validate_python(response)
-                await responder.respond(client_response)
-
-            case types.ListTasksRequest(params=params):
-                response = await self.list_tasks(ctx, params)
-                client_response = client_response_type.validate_python(response)
-                await responder.respond(client_response)
-
-            case types.CancelTaskRequest(params=params):
-                response = await self.cancel_task(ctx, params)
-                client_response = client_response_type.validate_python(response)
-                await responder.respond(client_response)
-
-            case _:  # pragma: no cover
-                raise ValueError(f"Unhandled request type: {type(responder.request)}")
+        pass
 
 
 # Backwards compatibility aliases

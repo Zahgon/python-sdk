@@ -19,15 +19,15 @@ class MCPError(Exception):
 
     @property
     def code(self) -> int:
-        return self.error.code
+        pass
 
     @property
     def message(self) -> str:
-        return self.error.message
+        pass
 
     @property
     def data(self) -> Any:
-        return self.error.data  # pragma: no cover
+        pass
 
     @classmethod
     def from_jsonrpc_error(cls, error: JSONRPCError) -> MCPError:
@@ -92,15 +92,9 @@ class UrlElicitationRequiredError(MCPError):
     @property
     def elicitations(self) -> list[ElicitRequestURLParams]:
         """The list of URL elicitations required before the request can proceed."""
-        return self._elicitations
+        pass
 
     @classmethod
     def from_error(cls, error: ErrorData) -> UrlElicitationRequiredError:
         """Reconstruct from an ErrorData received over the wire."""
-        if error.code != URL_ELICITATION_REQUIRED:
-            raise ValueError(f"Expected error code {URL_ELICITATION_REQUIRED}, got {error.code}")
-
-        data = cast(dict[str, Any], error.data or {})
-        raw_elicitations = cast(list[dict[str, Any]], data.get("elicitations", []))
-        elicitations = [ElicitRequestURLParams.model_validate(e) for e in raw_elicitations]
-        return cls(elicitations, error.message)
+        pass

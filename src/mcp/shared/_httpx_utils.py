@@ -77,21 +77,4 @@ def create_mcp_http_client(
             response = await client.get("/protected-endpoint")
         ```
     """
-    # Set MCP defaults
-    kwargs: dict[str, Any] = {"follow_redirects": True}
-
-    # Handle timeout
-    if timeout is None:
-        kwargs["timeout"] = httpx.Timeout(MCP_DEFAULT_TIMEOUT, read=MCP_DEFAULT_SSE_READ_TIMEOUT)
-    else:
-        kwargs["timeout"] = timeout
-
-    # Handle headers
-    if headers is not None:
-        kwargs["headers"] = headers
-
-    # Handle authentication
-    if auth is not None:  # pragma: no cover
-        kwargs["auth"] = auth
-
-    return httpx.AsyncClient(**kwargs)
+    pass

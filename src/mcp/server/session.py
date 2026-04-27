@@ -99,15 +99,15 @@ class ServerSession(
 
     @property
     def _receive_request_adapter(self) -> TypeAdapter[types.ClientRequest]:
-        return types.client_request_adapter
+        pass
 
     @property
     def _receive_notification_adapter(self) -> TypeAdapter[types.ClientNotification]:
-        return types.client_notification_adapter
+        pass
 
     @property
     def client_params(self) -> types.InitializeRequestParams | None:
-        return self._client_params
+        pass
 
     @property
     def experimental(self) -> ExperimentalServerSessionFeatures:
@@ -115,9 +115,7 @@ class ServerSession(
 
         WARNING: These APIs are experimental and may change without notice.
         """
-        if self._experimental_features is None:
-            self._experimental_features = ExperimentalServerSessionFeatures(self)
-        return self._experimental_features
+        pass
 
     def check_client_capability(self, capability: types.ClientCapabilities) -> bool:
         """Check if the client supports a specific capability."""
@@ -159,50 +157,14 @@ class ServerSession(
         return True
 
     async def _receive_loop(self) -> None:
-        async with self._incoming_message_stream_writer:
-            await super()._receive_loop()
+        pass
 
     async def _received_request(self, responder: RequestResponder[types.ClientRequest, types.ServerResult]):
-        match responder.request:
-            case types.InitializeRequest(params=params):
-                requested_version = params.protocol_version
-                self._initialization_state = InitializationState.Initializing
-                self._client_params = params
-                with responder:
-                    await responder.respond(
-                        types.InitializeResult(
-                            protocol_version=requested_version
-                            if requested_version in SUPPORTED_PROTOCOL_VERSIONS
-                            else types.LATEST_PROTOCOL_VERSION,
-                            capabilities=self._init_options.capabilities,
-                            server_info=types.Implementation(
-                                name=self._init_options.server_name,
-                                title=self._init_options.title,
-                                description=self._init_options.description,
-                                version=self._init_options.server_version,
-                                website_url=self._init_options.website_url,
-                                icons=self._init_options.icons,
-                            ),
-                            instructions=self._init_options.instructions,
-                        )
-                    )
-                self._initialization_state = InitializationState.Initialized
-            case types.PingRequest():
-                # Ping requests are allowed at any time
-                pass
-            case _:
-                if self._initialization_state != InitializationState.Initialized:
-                    raise RuntimeError("Received request before initialization was complete")
+        pass
 
     async def _received_notification(self, notification: types.ClientNotification) -> None:
         # Need this to avoid ASYNC910
-        await anyio.lowlevel.checkpoint()
-        match notification:
-            case types.InitializedNotification():
-                self._initialization_state = InitializationState.Initialized
-            case _:
-                if self._initialization_state != InitializationState.Initialized:  # pragma: no cover
-                    raise RuntimeError("Received notification before initialization was complete")
+        pass
 
     async def send_log_message(
         self,
@@ -225,11 +187,7 @@ class ServerSession(
 
     async def send_resource_updated(self, uri: str | AnyUrl) -> None:  # pragma: no cover
         """Send a resource updated notification."""
-        await self.send_notification(
-            types.ResourceUpdatedNotification(
-                params=types.ResourceUpdatedNotificationParams(uri=str(uri)),
-            )
-        )
+        pass
 
     @overload
     async def create_message(
@@ -311,49 +269,11 @@ class ServerSession(
             ValueError: If tool_use or tool_result message structure is invalid.
             StatelessModeNotSupported: If called in stateless HTTP mode.
         """
-        if self._stateless:
-            raise StatelessModeNotSupported(method="sampling")
-        client_caps = self._client_params.capabilities if self._client_params else None
-        validate_sampling_tools(client_caps, tools, tool_choice)
-        validate_tool_use_result_messages(messages)
-
-        request = types.CreateMessageRequest(
-            params=types.CreateMessageRequestParams(
-                messages=messages,
-                system_prompt=system_prompt,
-                include_context=include_context,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stop_sequences=stop_sequences,
-                metadata=metadata,
-                model_preferences=model_preferences,
-                tools=tools,
-                tool_choice=tool_choice,
-            ),
-        )
-        metadata_obj = ServerMessageMetadata(related_request_id=related_request_id)
-
-        # Use different result types based on whether tools are provided
-        if tools is not None:
-            return await self.send_request(
-                request=request,
-                result_type=types.CreateMessageResultWithTools,
-                metadata=metadata_obj,
-            )
-        return await self.send_request(
-            request=request,
-            result_type=types.CreateMessageResult,
-            metadata=metadata_obj,
-        )
+        pass
 
     async def list_roots(self) -> types.ListRootsResult:
         """Send a roots/list request."""
-        if self._stateless:
-            raise StatelessModeNotSupported(method="list_roots")
-        return await self.send_request(
-            types.ListRootsRequest(),
-            types.ListRootsResult,
-        )
+        pass
 
     async def elicit(
         self,
@@ -433,26 +353,11 @@ class ServerSession(
         Raises:
             StatelessModeNotSupported: If called in stateless HTTP mode.
         """
-        if self._stateless:
-            raise StatelessModeNotSupported(method="elicitation")
-        return await self.send_request(
-            types.ElicitRequest(
-                params=types.ElicitRequestURLParams(
-                    message=message,
-                    url=url,
-                    elicitation_id=elicitation_id,
-                ),
-            ),
-            types.ElicitResult,
-            metadata=ServerMessageMetadata(related_request_id=related_request_id),
-        )
+        pass
 
     async def send_ping(self) -> types.EmptyResult:  # pragma: no cover
         """Send a ping request."""
-        return await self.send_request(
-            types.PingRequest(),
-            types.EmptyResult,
-        )
+        pass
 
     async def send_progress_notification(
         self,
@@ -463,29 +368,19 @@ class ServerSession(
         related_request_id: str | None = None,
     ) -> None:
         """Send a progress notification."""
-        await self.send_notification(
-            types.ProgressNotification(
-                params=types.ProgressNotificationParams(
-                    progress_token=progress_token,
-                    progress=progress,
-                    total=total,
-                    message=message,
-                ),
-            ),
-            related_request_id,
-        )
+        pass
 
     async def send_resource_list_changed(self) -> None:
         """Send a resource list changed notification."""
-        await self.send_notification(types.ResourceListChangedNotification())
+        pass
 
     async def send_tool_list_changed(self) -> None:  # pragma: no cover
         """Send a tool list changed notification."""
-        await self.send_notification(types.ToolListChangedNotification())
+        pass
 
     async def send_prompt_list_changed(self) -> None:  # pragma: no cover
         """Send a prompt list changed notification."""
-        await self.send_notification(types.PromptListChangedNotification())
+        pass
 
     async def send_elicit_complete(
         self,
@@ -502,12 +397,7 @@ class ServerSession(
             elicitation_id: The unique identifier of the completed elicitation
             related_request_id: Optional ID of the request that triggered this notification
         """
-        await self.send_notification(
-            types.ElicitCompleteNotification(
-                params=types.ElicitCompleteNotificationParams(elicitation_id=elicitation_id)
-            ),
-            related_request_id,
-        )
+        pass
 
     def _build_elicit_form_request(
         self,
@@ -572,32 +462,7 @@ class ServerSession(
         Returns:
             A JSONRPCRequest ready to be sent or queued
         """
-        params = types.ElicitRequestURLParams(
-            message=message,
-            url=url,
-            elicitation_id=elicitation_id,
-        )
-        params_data = params.model_dump(by_alias=True, mode="json", exclude_none=True)
-
-        # Add related-task metadata if associated with a parent task
-        if related_task_id is not None:
-            # Defensive: model_dump() never includes _meta, but guard against future changes
-            if "_meta" not in params_data:  # pragma: no branch
-                params_data["_meta"] = {}
-            params_data["_meta"][RELATED_TASK_METADATA_KEY] = types.RelatedTaskMetadata(
-                task_id=related_task_id
-            ).model_dump(by_alias=True)
-
-        request_id = f"task-{related_task_id}-{id(params)}" if related_task_id else self._request_id
-        if related_task_id is None:
-            self._request_id += 1
-
-        return types.JSONRPCRequest(
-            jsonrpc="2.0",
-            id=request_id,
-            method="elicitation/create",
-            params=params_data,
-        )
+        pass
 
     def _build_create_message_request(
         self,
@@ -634,40 +499,7 @@ class ServerSession(
         Returns:
             A JSONRPCRequest ready to be sent or queued
         """
-        params = types.CreateMessageRequestParams(
-            messages=messages,
-            system_prompt=system_prompt,
-            include_context=include_context,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stop_sequences=stop_sequences,
-            metadata=metadata,
-            model_preferences=model_preferences,
-            tools=tools,
-            tool_choice=tool_choice,
-            task=task,
-        )
-        params_data = params.model_dump(by_alias=True, mode="json", exclude_none=True)
-
-        # Add related-task metadata if associated with a parent task
-        if related_task_id is not None:
-            # Defensive: model_dump() never includes _meta, but guard against future changes
-            if "_meta" not in params_data:  # pragma: no branch
-                params_data["_meta"] = {}
-            params_data["_meta"][RELATED_TASK_METADATA_KEY] = types.RelatedTaskMetadata(
-                task_id=related_task_id
-            ).model_dump(by_alias=True)
-
-        request_id = f"task-{related_task_id}-{id(params)}" if related_task_id else self._request_id
-        if related_task_id is None:
-            self._request_id += 1
-
-        return types.JSONRPCRequest(
-            jsonrpc="2.0",
-            id=request_id,
-            method="sampling/createMessage",
-            params=params_data,
-        )
+        pass
 
     async def send_message(self, message: SessionMessage) -> None:
         """Send a raw session message.
@@ -682,11 +514,11 @@ class ServerSession(
         Args:
             message: The session message to send
         """
-        await self._write_stream.send(message)
+        pass
 
     async def _handle_incoming(self, req: ServerRequestResponder) -> None:
-        await self._incoming_message_stream_writer.send(req)
+        pass
 
     @property
     def incoming_messages(self) -> MemoryObjectReceiveStream[ServerRequestResponder]:
-        return self._incoming_message_stream_reader
+        pass

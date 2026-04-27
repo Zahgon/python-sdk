@@ -145,45 +145,4 @@ class Prompt(BaseModel):
         Raises:
             ValueError: If required arguments are missing, or if rendering fails.
         """
-        # Validate required arguments
-        if self.arguments:
-            required = {arg.name for arg in self.arguments if arg.required}
-            provided = set(arguments or {})
-            missing = required - provided
-            if missing:
-                raise ValueError(f"Missing required arguments: {missing}")
-
-        try:
-            # Add context to arguments if needed
-            call_args = inject_context(self.fn, arguments or {}, context, self.context_kwarg)
-
-            fn = self.fn
-            if is_async_callable(fn):
-                result = await fn(**call_args)
-            else:
-                result = await anyio.to_thread.run_sync(functools.partial(self.fn, **call_args))
-
-            # Validate messages
-            if not isinstance(result, list | tuple):
-                result = [result]
-
-            # Convert result to messages
-            messages: list[Message] = []
-            for msg in result:  # type: ignore[reportUnknownVariableType]
-                try:
-                    if isinstance(msg, Message):
-                        messages.append(msg)
-                    elif isinstance(msg, dict):
-                        messages.append(message_validator.validate_python(msg))
-                    elif isinstance(msg, str):
-                        content = TextContent(type="text", text=msg)
-                        messages.append(UserMessage(content=content))
-                    else:  # pragma: no cover
-                        content = pydantic_core.to_json(msg, fallback=str, indent=2).decode()
-                        messages.append(Message(role="user", content=content))
-                except Exception:  # pragma: no cover
-                    raise ValueError(f"Could not convert prompt result to message: {msg}")
-
-            return messages
-        except Exception as e:  # pragma: no cover
-            raise ValueError(f"Error rendering prompt {self.name}: {e}")
+        pass

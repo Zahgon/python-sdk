@@ -101,21 +101,21 @@ class ServerTaskContext:
     @property
     def task_id(self) -> str:
         """The task identifier."""
-        return self._ctx.task_id
+        pass
 
     @property
     def task(self) -> Task:
         """The current task state."""
-        return self._ctx.task
+        pass
 
     @property
     def is_cancelled(self) -> bool:
         """Whether cancellation has been requested."""
-        return self._ctx.is_cancelled
+        pass
 
     def request_cancellation(self) -> None:
         """Request cancellation of this task."""
-        self._ctx.request_cancellation()
+        pass
 
     # Enhanced methods with notifications
 
@@ -126,9 +126,7 @@ class ServerTaskContext:
             message: The new status message
             notify: Whether to send a notification to the client
         """
-        await self._ctx.update_status(message)
-        if notify:
-            await self._send_notification()
+        pass
 
     async def complete(self, result: Result, *, notify: bool = True) -> None:
         """Mark the task as completed with the given result.
@@ -137,9 +135,7 @@ class ServerTaskContext:
             result: The task result
             notify: Whether to send a notification to the client
         """
-        await self._ctx.complete(result)
-        if notify:
-            await self._send_notification()
+        pass
 
     async def fail(self, error: str, *, notify: bool = True) -> None:
         """Mark the task as failed with an error message.
@@ -148,26 +144,11 @@ class ServerTaskContext:
             error: The error message
             notify: Whether to send a notification to the client
         """
-        await self._ctx.fail(error)
-        if notify:
-            await self._send_notification()
+        pass
 
     async def _send_notification(self) -> None:
         """Send a task status notification to the client."""
-        task = self._ctx.task
-        await self._session.send_notification(
-            TaskStatusNotification(
-                params=TaskStatusNotificationParams(
-                    task_id=task.task_id,
-                    status=task.status,
-                    status_message=task.status_message,
-                    created_at=task.created_at,
-                    last_updated_at=task.last_updated_at,
-                    ttl=task.ttl,
-                    poll_interval=task.poll_interval,
-                )
-            )
-        )
+        pass
 
     # Server-specific methods: elicitation and sampling
 
@@ -178,8 +159,7 @@ class ServerTaskContext:
 
     def _check_sampling_capability(self) -> None:
         """Check if the client supports sampling."""
-        if not self._session.check_client_capability(ClientCapabilities(sampling=SamplingCapability())):
-            raise MCPError(code=INVALID_REQUEST, message="Client does not support sampling capability")
+        pass
 
     async def elicit(
         self,
@@ -275,42 +255,7 @@ class ServerTaskContext:
             MCPError: If client doesn't support elicitation capability
             RuntimeError: If handler is not configured
         """
-        self._check_elicitation_capability()
-
-        if self._handler is None:
-            raise RuntimeError("handler is required for elicit_url(). Pass handler= to ServerTaskContext.")
-
-        # Update status to input_required
-        await self._store.update_task(self.task_id, status=TASK_STATUS_INPUT_REQUIRED)
-
-        # Build the request using session's helper
-        request = self._session._build_elicit_url_request(  # pyright: ignore[reportPrivateUsage]
-            message=message,
-            url=url,
-            elicitation_id=elicitation_id,
-            related_task_id=self.task_id,
-        )
-        request_id: RequestId = request.id
-
-        resolver: Resolver[dict[str, Any]] = Resolver()
-        self._handler._pending_requests[request_id] = resolver  # pyright: ignore[reportPrivateUsage]
-
-        queued = QueuedMessage(
-            type="request",
-            message=request,
-            resolver=resolver,
-            original_request_id=request_id,
-        )
-        await self._queue.enqueue(self.task_id, queued)
-
-        try:
-            # Wait for response (routed back via TaskResultHandler)
-            response_data = await resolver.wait()
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            return ElicitResult.model_validate(response_data)
-        except anyio.get_cancelled_exc_class():  # pragma: no cover
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            raise
+        pass
 
     async def create_message(
         self,
@@ -355,54 +300,7 @@ class ServerTaskContext:
             MCPError: If client doesn't support sampling capability or tools
             ValueError: If tool_use or tool_result message structure is invalid
         """
-        self._check_sampling_capability()
-        client_caps = self._session.client_params.capabilities if self._session.client_params else None
-        validate_sampling_tools(client_caps, tools, tool_choice)
-        validate_tool_use_result_messages(messages)
-
-        if self._handler is None:
-            raise RuntimeError("handler is required for create_message(). Pass handler= to ServerTaskContext.")
-
-        # Update status to input_required
-        await self._store.update_task(self.task_id, status=TASK_STATUS_INPUT_REQUIRED)
-
-        # Build the request using session's helper
-        request = self._session._build_create_message_request(  # pyright: ignore[reportPrivateUsage]
-            messages=messages,
-            max_tokens=max_tokens,
-            system_prompt=system_prompt,
-            include_context=include_context,
-            temperature=temperature,
-            stop_sequences=stop_sequences,
-            metadata=metadata,
-            model_preferences=model_preferences,
-            tools=tools,
-            tool_choice=tool_choice,
-            related_task_id=self.task_id,
-        )
-        request_id: RequestId = request.id
-
-        resolver: Resolver[dict[str, Any]] = Resolver()
-        self._handler._pending_requests[request_id] = resolver  # pyright: ignore[reportPrivateUsage]
-
-        queued = QueuedMessage(
-            type="request",
-            message=request,
-            resolver=resolver,
-            original_request_id=request_id,
-        )
-        await self._queue.enqueue(self.task_id, queued)
-
-        try:
-            # Wait for response (routed back via TaskResultHandler)
-            response_data = await resolver.wait()
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            return CreateMessageResult.model_validate(response_data)
-        except anyio.get_cancelled_exc_class():
-            # This path is tested in test_create_message_restores_status_on_cancellation
-            # which verifies status is restored to "working" after cancellation.
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            raise
+        pass
 
     async def elicit_as_task(
         self,
@@ -430,56 +328,7 @@ class ServerTaskContext:
             MCPError: If client doesn't support task-augmented elicitation
             RuntimeError: If handler is not configured
         """
-        client_caps = self._session.client_params.capabilities if self._session.client_params else None
-        require_task_augmented_elicitation(client_caps)
-
-        if self._handler is None:
-            raise RuntimeError("handler is required for elicit_as_task()")
-
-        # Update status to input_required
-        await self._store.update_task(self.task_id, status=TASK_STATUS_INPUT_REQUIRED)
-
-        request = self._session._build_elicit_form_request(  # pyright: ignore[reportPrivateUsage]
-            message=message,
-            requested_schema=requested_schema,
-            related_task_id=self.task_id,
-            task=TaskMetadata(ttl=ttl),
-        )
-        request_id: RequestId = request.id
-
-        resolver: Resolver[dict[str, Any]] = Resolver()
-        self._handler._pending_requests[request_id] = resolver  # pyright: ignore[reportPrivateUsage]
-
-        queued = QueuedMessage(
-            type="request",
-            message=request,
-            resolver=resolver,
-            original_request_id=request_id,
-        )
-        await self._queue.enqueue(self.task_id, queued)
-
-        try:
-            # Wait for initial response (CreateTaskResult from client)
-            response_data = await resolver.wait()
-            create_result = CreateTaskResult.model_validate(response_data)
-            client_task_id = create_result.task.task_id
-
-            # Poll the client's task using session.experimental
-            async for _ in self._session.experimental.poll_task(client_task_id):
-                pass
-
-            # Get final result from client
-            result = await self._session.experimental.get_task_result(
-                client_task_id,
-                ElicitResult,
-            )
-
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            return result
-
-        except anyio.get_cancelled_exc_class():  # pragma: no cover
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            raise
+        pass
 
     async def create_message_as_task(
         self,
@@ -524,64 +373,4 @@ class ServerTaskContext:
             ValueError: If tool_use or tool_result message structure is invalid
             RuntimeError: If handler is not configured
         """
-        client_caps = self._session.client_params.capabilities if self._session.client_params else None
-        require_task_augmented_sampling(client_caps)
-        validate_sampling_tools(client_caps, tools, tool_choice)
-        validate_tool_use_result_messages(messages)
-
-        if self._handler is None:
-            raise RuntimeError("handler is required for create_message_as_task()")
-
-        # Update status to input_required
-        await self._store.update_task(self.task_id, status=TASK_STATUS_INPUT_REQUIRED)
-
-        # Build request WITH task field for task-augmented sampling
-        request = self._session._build_create_message_request(  # pyright: ignore[reportPrivateUsage]
-            messages=messages,
-            max_tokens=max_tokens,
-            system_prompt=system_prompt,
-            include_context=include_context,
-            temperature=temperature,
-            stop_sequences=stop_sequences,
-            metadata=metadata,
-            model_preferences=model_preferences,
-            tools=tools,
-            tool_choice=tool_choice,
-            related_task_id=self.task_id,
-            task=TaskMetadata(ttl=ttl),
-        )
-        request_id: RequestId = request.id
-
-        resolver: Resolver[dict[str, Any]] = Resolver()
-        self._handler._pending_requests[request_id] = resolver  # pyright: ignore[reportPrivateUsage]
-
-        queued = QueuedMessage(
-            type="request",
-            message=request,
-            resolver=resolver,
-            original_request_id=request_id,
-        )
-        await self._queue.enqueue(self.task_id, queued)
-
-        try:
-            # Wait for initial response (CreateTaskResult from client)
-            response_data = await resolver.wait()
-            create_result = CreateTaskResult.model_validate(response_data)
-            client_task_id = create_result.task.task_id
-
-            # Poll the client's task using session.experimental
-            async for _ in self._session.experimental.poll_task(client_task_id):
-                pass
-
-            # Get final result from client
-            result = await self._session.experimental.get_task_result(
-                client_task_id,
-                CreateMessageResult,
-            )
-
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            return result
-
-        except anyio.get_cancelled_exc_class():  # pragma: no cover
-            await self._store.update_task(self.task_id, status=TASK_STATUS_WORKING)
-            raise
+        pass

@@ -27,19 +27,7 @@ class Image:
 
     def _get_mime_type(self) -> str:
         """Get MIME type from format or guess from file extension."""
-        if self._format:  # pragma: no cover
-            return f"image/{self._format.lower()}"
-
-        if self.path:
-            suffix = self.path.suffix.lower()
-            return {
-                ".png": "image/png",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-                ".gif": "image/gif",
-                ".webp": "image/webp",
-            }.get(suffix, "application/octet-stream")
-        return "image/png"  # pragma: no cover  # default for raw binary data
+        pass
 
     def to_image_content(self) -> ImageContent:
         """Convert to MCP ImageContent."""
@@ -73,20 +61,7 @@ class Audio:
 
     def _get_mime_type(self) -> str:
         """Get MIME type from format or guess from file extension."""
-        if self._format:  # pragma: no cover
-            return f"audio/{self._format.lower()}"
-
-        if self.path:
-            suffix = self.path.suffix.lower()
-            return {
-                ".wav": "audio/wav",
-                ".mp3": "audio/mpeg",
-                ".ogg": "audio/ogg",
-                ".flac": "audio/flac",
-                ".aac": "audio/aac",
-                ".m4a": "audio/mp4",
-            }.get(suffix, "application/octet-stream")
-        return "audio/wav"  # pragma: no cover  # default for raw binary data
+        pass
 
     def to_audio_content(self) -> AudioContent:
         """Convert to MCP AudioContent."""

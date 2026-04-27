@@ -50,24 +50,12 @@ def check_tasks_capability(
 
 def has_task_augmented_elicitation(caps: ClientCapabilities) -> bool:
     """Check if capabilities include task-augmented elicitation support."""
-    if caps.tasks is None:
-        return False
-    if caps.tasks.requests is None:
-        return False
-    if caps.tasks.requests.elicitation is None:
-        return False
-    return caps.tasks.requests.elicitation.create is not None
+    pass
 
 
 def has_task_augmented_sampling(caps: ClientCapabilities) -> bool:
     """Check if capabilities include task-augmented sampling support."""
-    if caps.tasks is None:
-        return False
-    if caps.tasks.requests is None:
-        return False
-    if caps.tasks.requests.sampling is None:
-        return False
-    return caps.tasks.requests.sampling.create_message is not None
+    pass
 
 
 def require_task_augmented_elicitation(client_caps: ClientCapabilities | None) -> None:
@@ -79,8 +67,7 @@ def require_task_augmented_elicitation(client_caps: ClientCapabilities | None) -
     Raises:
         MCPError: If client doesn't support task-augmented elicitation
     """
-    if client_caps is None or not has_task_augmented_elicitation(client_caps):
-        raise MCPError(code=INVALID_REQUEST, message="Client does not support task-augmented elicitation")
+    pass
 
 
 def require_task_augmented_sampling(client_caps: ClientCapabilities | None) -> None:
@@ -92,5 +79,4 @@ def require_task_augmented_sampling(client_caps: ClientCapabilities | None) -> N
     Raises:
         MCPError: If client doesn't support task-augmented sampling
     """
-    if client_caps is None or not has_task_augmented_sampling(client_caps):
-        raise MCPError(code=INVALID_REQUEST, message="Client does not support task-augmented sampling")
+    pass

@@ -155,19 +155,7 @@ class SseServerTransport:
         sse_stream_writer, sse_stream_reader = anyio.create_memory_object_stream[dict[str, Any]](0)
 
         async def sse_writer():
-            logger.debug("Starting SSE writer")
-            async with sse_stream_writer, write_stream_reader:
-                await sse_stream_writer.send({"event": "endpoint", "data": client_post_uri_data})
-                logger.debug(f"Sent endpoint event: {client_post_uri_data}")
-
-                async for session_message in write_stream_reader:
-                    logger.debug(f"Sending message via SSE: {session_message}")
-                    await sse_stream_writer.send(
-                        {
-                            "event": "message",
-                            "data": session_message.message.model_dump_json(by_alias=True, exclude_unset=True),
-                        }
-                    )
+            pass
 
         async with anyio.create_task_group() as tg:
 
@@ -176,13 +164,7 @@ class SseServerTransport:
                 In this case we close our side of the streams to signal the client that
                 the connection has been closed.
                 """
-                await EventSourceResponse(content=sse_stream_reader, data_sender_callable=sse_writer)(
-                    scope, receive, send
-                )
-                await read_stream_writer.aclose()
-                await write_stream_reader.aclose()
-                self._read_stream_writers.pop(session_id, None)
-                logging.debug(f"Client session disconnected {session_id}")
+                pass
 
             logger.debug("Starting SSE response task")
             tg.start_soon(response_wrapper, scope, receive, send)
@@ -191,51 +173,4 @@ class SseServerTransport:
             yield (read_stream, write_stream)
 
     async def handle_post_message(self, scope: Scope, receive: Receive, send: Send) -> None:  # pragma: no cover
-        logger.debug("Handling POST message")
-        request = Request(scope, receive)
-
-        # Validate request headers for DNS rebinding protection
-        error_response = await self._security.validate_request(request, is_post=True)
-        if error_response:
-            return await error_response(scope, receive, send)
-
-        session_id_param = request.query_params.get("session_id")
-        if session_id_param is None:
-            logger.warning("Received request without session_id")
-            response = Response("session_id is required", status_code=400)
-            return await response(scope, receive, send)
-
-        try:
-            session_id = UUID(hex=session_id_param)
-            logger.debug(f"Parsed session ID: {session_id}")
-        except ValueError:
-            logger.warning(f"Received invalid session ID: {session_id_param}")
-            response = Response("Invalid session ID", status_code=400)
-            return await response(scope, receive, send)
-
-        writer = self._read_stream_writers.get(session_id)
-        if not writer:
-            logger.warning(f"Could not find session for ID: {session_id}")
-            response = Response("Could not find session", status_code=404)
-            return await response(scope, receive, send)
-
-        body = await request.body()
-        logger.debug(f"Received JSON: {body}")
-
-        try:
-            message = types.jsonrpc_message_adapter.validate_json(body, by_name=False)
-            logger.debug(f"Validated client message: {message}")
-        except ValidationError as err:
-            logger.exception("Failed to parse message")
-            response = Response("Could not parse message", status_code=400)
-            await response(scope, receive, send)
-            await writer.send(err)
-            return
-
-        # Pass the ASGI scope for framework-agnostic access to request data
-        metadata = ServerMessageMetadata(request_context=request)
-        session_message = SessionMessage(message, metadata=metadata)
-        logger.debug(f"Sending session message to writer: {session_message}")
-        response = Response("Accepted", status_code=202)
-        await response(scope, receive, send)
-        await writer.send(session_message)
+        pass

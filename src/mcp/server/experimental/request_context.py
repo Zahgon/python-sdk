@@ -47,14 +47,12 @@ class Experimental:
     @property
     def is_task(self) -> bool:
         """Check if this request is task-augmented."""
-        return self.task_metadata is not None
+        pass
 
     @property
     def client_supports_tasks(self) -> bool:
         """Check if the client declared task support."""
-        if self._client_capabilities is None:
-            return False
-        return self._client_capabilities.tasks is not None
+        pass
 
     def validate_task_mode(
         self, tool_task_mode: TaskExecutionMode | None, *, raise_error: bool = True
@@ -77,20 +75,7 @@ class Experimental:
         Raises:
             MCPError: If invalid and raise_error=True
         """
-
-        mode = tool_task_mode or TASK_FORBIDDEN
-
-        error: ErrorData | None = None
-
-        if mode == TASK_REQUIRED and not self.is_task:
-            error = ErrorData(code=METHOD_NOT_FOUND, message="This tool requires task-augmented invocation")
-        elif mode == TASK_FORBIDDEN and self.is_task:
-            error = ErrorData(code=METHOD_NOT_FOUND, message="This tool does not support task-augmented invocation")
-
-        if error is not None and raise_error:
-            raise MCPError.from_error_data(error)
-
-        return error
+        pass
 
     def validate_for_tool(self, tool: Tool, *, raise_error: bool = True) -> ErrorData | None:
         """Validate that the request is compatible with the given tool.
@@ -104,8 +89,7 @@ class Experimental:
         Returns:
             None if valid, ErrorData if invalid and raise_error=False
         """
-        mode = tool.execution.task_support if tool.execution else None
-        return self.validate_task_mode(mode, raise_error=raise_error)
+        pass
 
     def can_use_tool(self, tool_task_mode: TaskExecutionMode | None) -> bool:
         """Check if this client can use a tool with the given task mode.
@@ -119,10 +103,7 @@ class Experimental:
         Returns:
             True if the client can use this tool, False otherwise
         """
-        mode = tool_task_mode or TASK_FORBIDDEN
-        if mode == TASK_REQUIRED and not self.client_supports_tasks:
-            return False
-        return True
+        pass
 
     async def run_task(
         self,
@@ -175,43 +156,4 @@ class Experimental:
 
         WARNING: This API is experimental and may change without notice.
         """
-        if self._task_support is None:
-            raise RuntimeError("Task support not enabled. Call server.experimental.enable_tasks() first.")
-        if self._session is None:
-            raise RuntimeError("Session not available.")
-        if self.task_metadata is None:
-            raise RuntimeError(
-                "Request is not task-augmented (no task field in params). "
-                "The client must send a task-augmented request."
-            )
-
-        support = self._task_support
-        # Access task_group via TaskSupport - raises if not in run() context
-        task_group = support.task_group
-
-        task = await support.store.create_task(self.task_metadata, task_id)
-
-        task_ctx = ServerTaskContext(
-            task=task,
-            store=support.store,
-            session=self._session,
-            queue=support.queue,
-            handler=support.handler,
-        )
-
-        async def execute() -> None:
-            try:
-                result = await work(task_ctx)
-                if not is_terminal(task_ctx.task.status):
-                    await task_ctx.complete(result)
-            except Exception as e:
-                if not is_terminal(task_ctx.task.status):
-                    await task_ctx.fail(str(e))
-
-        task_group.start_soon(execute)
-
-        meta: dict[str, Any] | None = None
-        if model_immediate_response is not None:
-            meta = {MODEL_IMMEDIATE_RESPONSE_KEY: model_immediate_response}
-
-        return CreateTaskResult(task=task, **{"_meta": meta} if meta else {})
+        pass
